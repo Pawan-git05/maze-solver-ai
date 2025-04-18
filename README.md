@@ -8,3 +8,15 @@
 ## 📦 How to Run
 
 1. Install dependencies:
+
+2. Run one of the scripts:
+
+## 🔧 Tech Stack
+- Python 3
+- `pygame`
+- `tkinter`
+
+## 🧠 To-Do
+- Add AI solver
+- Animate solving process
+- UI to choose between random/manual
