@@ -9,7 +9,7 @@ CELL_SIZE = 40
 if len(sys.argv) > 1:
     size = int(sys.argv[1])
 else:
-    size = 15  # Default if no argument
+    size = 10  # Default if no argument
 
 ROWS, COLS = size, size
 WIDTH, HEIGHT = COLS * CELL_SIZE, ROWS * CELL_SIZE
@@ -25,8 +25,8 @@ DIRS = [(-1, 0), (0, 1), (1, 0), (0, -1)]
 maze = [[[True, True, True, True] for _ in range(COLS)] for _ in range(ROWS)]
 visited = [[False for _ in range(COLS)] for _ in range(ROWS)]
 
-# Matrix for 0 (open), 1 (wall)
-matrix = [[1 for _ in range(COLS)] for _ in range(ROWS)]
+# Final matrix to store expanded walls and paths
+matrix = []
 
 def draw_maze(screen):
     screen.fill(BG_COLOR)
@@ -61,9 +61,24 @@ def generate_maze(row=0, col=0):
             generate_maze(nr, nc)
 
 def update_matrix():
-    for row in range(ROWS):
-        for col in range(COLS):
-            matrix[row][col] = 0 if maze[row][col] == [False, False, False, False] else 1
+    rows_exp = ROWS * 2 + 1
+    cols_exp = COLS * 2 + 1
+    global matrix
+    matrix = [[1 for _ in range(cols_exp)] for _ in range(rows_exp)]
+
+    for r in range(ROWS):
+        for c in range(COLS):
+            mr, mc = r * 2 + 1, c * 2 + 1
+            matrix[mr][mc] = 0  # Cell center is a path
+
+            if not maze[r][c][0]:  # No top wall
+                matrix[mr - 1][mc] = 0
+            if not maze[r][c][1]:  # No right wall
+                matrix[mr][mc + 1] = 0
+            if not maze[r][c][2]:  # No bottom wall
+                matrix[mr + 1][mc] = 0
+            if not maze[r][c][3]:  # No left wall
+                matrix[mr][mc - 1] = 0
 
 def print_matrix():
     print("\nGenerated Maze Matrix (1 = wall, 0 = path):")
@@ -73,8 +88,8 @@ def print_matrix():
 def save_matrix_to_file(filename="random_maze.txt"):
     with open(filename, "w") as f:
         for row in matrix:
-            f.write("".join(str(cell) for cell in row) + "\n")
-    print(f"\nMatrix saved to {filename}")
+            f.write(" ".join(str(cell) for cell in row) + "\n")
+    print(f"\nExpanded matrix saved to {filename}")
 
 def main():
     pygame.init()
@@ -95,7 +110,6 @@ def main():
                 running = False
 
     pygame.quit()
-    sys.exit()
 
 if __name__ == "__main__":
     main()

@@ -8,7 +8,7 @@ CELL_SIZE = 40
 if len(sys.argv) > 1:
     size = int(sys.argv[1])
 else:
-    size = 15  # default size if none provided
+    size = 10  # default size
 
 ROWS, COLS = size, size
 WIDTH, HEIGHT = COLS * CELL_SIZE, ROWS * CELL_SIZE
@@ -20,8 +20,8 @@ WALL_COLOR = (255, 255, 255)
 # Maze: Each cell has [top, right, bottom, left]
 maze = [[[False, False, False, False] for _ in range(COLS)] for _ in range(ROWS)]
 
-# Matrix to store simplified wall status (1 = wall, 0 = open)
-matrix = [[0 for _ in range(COLS)] for _ in range(ROWS)]
+# Matrix to store expanded layout (2N+1 x 2N+1)
+matrix = []
 
 def draw_grid(screen):
     screen.fill(BG_COLOR)
@@ -69,19 +69,34 @@ def toggle_wall(pos):
             maze[row][col - 1][1] = maze[row][col][3]
 
 def update_matrix():
-    for row in range(ROWS):
-        for col in range(COLS):
-            matrix[row][col] = 1 if any(maze[row][col]) else 0
+    rows_exp = ROWS * 2 + 1
+    cols_exp = COLS * 2 + 1
+    global matrix
+    matrix = [[1 for _ in range(cols_exp)] for _ in range(rows_exp)]
+
+    for r in range(ROWS):
+        for c in range(COLS):
+            mr, mc = r * 2 + 1, c * 2 + 1
+            matrix[mr][mc] = 0  # Cell center is path
+
+            if not maze[r][c][0]:  # No top wall
+                matrix[mr - 1][mc] = 0
+            if not maze[r][c][1]:  # No right wall
+                matrix[mr][mc + 1] = 0
+            if not maze[r][c][2]:  # No bottom wall
+                matrix[mr + 1][mc] = 0
+            if not maze[r][c][3]:  # No left wall
+                matrix[mr][mc - 1] = 0
 
 def print_matrix():
-    print("\nGenerated Maze Matrix (1 = wall, 0 = path):")
+    print("\nExpanded Maze Matrix (1 = wall, 0 = path):")
     for row in matrix:
         print(" ".join(str(cell) for cell in row))
 
 def save_matrix_to_file(filename="manual_maze.txt"):
     with open(filename, "w") as f:
         for row in matrix:
-            f.write("".join(str(cell) for cell in row) + "\n")
+            f.write(" ".join(str(cell) for cell in row) + "\n")
     print(f"\nMatrix saved to {filename}")
 
 def main():
@@ -101,7 +116,6 @@ def main():
                 print_matrix()
                 save_matrix_to_file()
                 running = False
-
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     toggle_wall(event.pos)
