@@ -50,9 +50,10 @@ def show_algorithm_selection(maze_file):
         # Placeholder for future algorithms
         # elif algo == "Dijkstra":
         #     subprocess.Popen(["python", "dijkstra.py", maze_file])
-        # elif algo == "BFS":
-        #     subprocess.Popen(["python", "bfs.py", maze_file])
-        
+        elif algo == "BFS":
+            subprocess.Popen(["python", "bfs.py", maze_file])
+        elif algo == "DFS":
+            subprocess.Popen(["python", "dfs.py", maze_file])
         algo_window.destroy()
         # Re-enable main window elements
         for widget in root.winfo_children():
