@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import subprocess
 import os
+from tkinter import messagebox
 
 def start_maze():
     choice = option.get()
@@ -10,15 +11,13 @@ def start_maze():
     
     # Start maze generation process
     process = subprocess.Popen(["python", f"{choice.lower().replace(' ', '_')}.py", size])
-    
-    # Wait for maze generation to complete
-    process.wait()
-    
+    process.wait()  # Wait for maze generation to complete
+
     # Check if maze file was created
     if os.path.exists(maze_file):
         show_algorithm_selection(maze_file)
     else:
-        tk.messagebox.showerror("Error", "Maze file was not generated.")
+        messagebox.showerror("Error", "Maze file was not generated.")
 
 def show_algorithm_selection(maze_file):
     # Disable main window elements
@@ -36,10 +35,10 @@ def show_algorithm_selection(maze_file):
     tk.Label(algo_window, text="Select Algorithm", font=("Helvetica", 14, "bold"), 
              fg="#2c3e50", bg="#f0f4f8").pack(pady=10)
     
-    # Algorithm Dropdown
+    # Algorithm Dropdown with all options
     algo_option = tk.StringVar(value="A* Algorithm")
     algo_dropdown = ttk.Combobox(algo_window, textvariable=algo_option, 
-                                 values=["A* Algorithm"],  # Placeholder for future algorithms
+                                 values=["A* Algorithm", "BFS", "DFS"],
                                  state="readonly", width=20)
     algo_dropdown.pack(pady=10)
     
@@ -47,13 +46,11 @@ def show_algorithm_selection(maze_file):
         algo = algo_option.get()
         if algo == "A* Algorithm":
             subprocess.Popen(["python", "astar.py", maze_file])
-        # Placeholder for future algorithms
-        # elif algo == "Dijkstra":
-        #     subprocess.Popen(["python", "dijkstra.py", maze_file])
         elif algo == "BFS":
             subprocess.Popen(["python", "bfs.py", maze_file])
         elif algo == "DFS":
             subprocess.Popen(["python", "dfs.py", maze_file])
+        
         algo_window.destroy()
         # Re-enable main window elements
         for widget in root.winfo_children():
