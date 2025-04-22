@@ -1,8 +1,11 @@
 import pygame
 import sys
+import copy
 
 # Config
 CELL_SIZE = 40
+BUTTON_HEIGHT = 50
+BUTTON_PADDING = 10
 
 # Get size from command-line argument
 if len(sys.argv) > 1:
@@ -11,16 +14,20 @@ else:
     size = 10  # default size
 
 ROWS, COLS = size, size
-WIDTH, HEIGHT = COLS * CELL_SIZE, ROWS * CELL_SIZE
+WIDTH, HEIGHT = COLS * CELL_SIZE, ROWS * CELL_SIZE + BUTTON_HEIGHT + BUTTON_PADDING * 2
 
 # Colors
 BG_COLOR = (0, 0, 0)
 WALL_COLOR = (255, 255, 255)
+BUTTON_COLOR = (70, 130, 180)
+BUTTON_HOVER_COLOR = (100, 160, 210)
+TEXT_COLOR = (255, 255, 255)
 
 # Maze: Each cell has [top, right, bottom, left]
 maze = [[[False, False, False, False] for _ in range(COLS)] for _ in range(ROWS)]
+undo_stack = []
 
-# Matrix to store expanded layout (2N+1 x 2N+1)
+# Matrix to store expanded layout
 matrix = []
 
 def draw_grid(screen):
@@ -39,8 +46,25 @@ def draw_grid(screen):
             if walls[3]:
                 pygame.draw.line(screen, WALL_COLOR, (x, y), (x, y + CELL_SIZE), 2)
 
+def draw_buttons(screen, font):
+    reset_rect = pygame.Rect(BUTTON_PADDING, HEIGHT - BUTTON_HEIGHT - BUTTON_PADDING, 100, BUTTON_HEIGHT)
+    undo_rect = pygame.Rect(BUTTON_PADDING + 120, HEIGHT - BUTTON_HEIGHT - BUTTON_PADDING, 100, BUTTON_HEIGHT)
+
+    mouse_pos = pygame.mouse.get_pos()
+    for rect, text in [(reset_rect, "Reset"), (undo_rect, "Undo")]:
+        color = BUTTON_HOVER_COLOR if rect.collidepoint(mouse_pos) else BUTTON_COLOR
+        pygame.draw.rect(screen, color, rect, border_radius=8)
+        label = font.render(text, True, TEXT_COLOR)
+        label_rect = label.get_rect(center=rect.center)
+        screen.blit(label, label_rect)
+    
+    return reset_rect, undo_rect
+
 def toggle_wall(pos):
     x, y = pos
+    if y > ROWS * CELL_SIZE:
+        return  # below grid, on buttons
+
     col = x // CELL_SIZE
     row = y // CELL_SIZE
     cell_x = x % CELL_SIZE
@@ -50,6 +74,8 @@ def toggle_wall(pos):
         return
 
     margin = 8
+    # Save current state before change
+    undo_stack.append(copy.deepcopy(maze))
 
     if cell_y < margin:
         maze[row][col][0] = not maze[row][col][0]
@@ -77,15 +103,14 @@ def update_matrix():
     for r in range(ROWS):
         for c in range(COLS):
             mr, mc = r * 2 + 1, c * 2 + 1
-            matrix[mr][mc] = 0  # Cell center is path
-
-            if not maze[r][c][0]:  # No top wall
+            matrix[mr][mc] = 0
+            if not maze[r][c][0]:
                 matrix[mr - 1][mc] = 0
-            if not maze[r][c][1]:  # No right wall
+            if not maze[r][c][1]:
                 matrix[mr][mc + 1] = 0
-            if not maze[r][c][2]:  # No bottom wall
+            if not maze[r][c][2]:
                 matrix[mr + 1][mc] = 0
-            if not maze[r][c][3]:  # No left wall
+            if not maze[r][c][3]:
                 matrix[mr][mc - 1] = 0
 
 def print_matrix():
@@ -104,20 +129,37 @@ def main():
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption(f"Manual Maze Builder ({size}x{size})")
 
+    font = pygame.font.SysFont(None, 28)
     clock = pygame.time.Clock()
     running = True
 
     while running:
         draw_grid(screen)
+        reset_rect, undo_rect = draw_buttons(screen, font)
         pygame.display.flip()
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 update_matrix()
                 print_matrix()
                 save_matrix_to_file()
                 running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
+
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if reset_rect.collidepoint(event.pos):
+                    undo_stack.append(copy.deepcopy(maze))
+                    for r in range(ROWS):
+                        for c in range(COLS):
+                            maze[r][c] = [False, False, False, False]
+
+                elif undo_rect.collidepoint(event.pos):
+                    if undo_stack:
+                        maze_restore = undo_stack.pop()
+                        for r in range(ROWS):
+                            for c in range(COLS):
+                                maze[r][c] = maze_restore[r][c]
+
+                else:
                     toggle_wall(event.pos)
 
         clock.tick(60)
