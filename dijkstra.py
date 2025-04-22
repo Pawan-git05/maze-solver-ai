@@ -2,6 +2,7 @@
 import pygame
 import sys
 import heapq
+import os
 
 CELL_SIZE = 30
 WHITE = (255, 255, 255)
@@ -78,16 +79,22 @@ def draw_maze(screen, maze, path):
             pygame.draw.rect(screen, GRAY, (c*CELL_SIZE, r*CELL_SIZE, CELL_SIZE, CELL_SIZE), 1)
 
     for r, c in path:
-        pygame.draw.rect(screen, BLUE, (c*CELL_SIZE, r*CELL_SIZE, CELL_SIZE, CELL_SIZE))
-        pygame.display.flip()
-        pygame.time.delay(30)
+        if maze[r][c] not in ('S', 'E'):
+            pygame.draw.rect(screen, BLUE, (c*CELL_SIZE, r*CELL_SIZE, CELL_SIZE, CELL_SIZE))
+            pygame.display.flip()
+            pygame.time.delay(30)
 
 def main():
     if len(sys.argv) != 2:
-        print("Usage: python dijkstra.py maze_file.txt")
+        print("Usage: python dijkstra.py <maze_file.txt>")
         sys.exit(1)
 
-    maze = read_maze(sys.argv[1])
+    file_path = sys.argv[1]
+    if not os.path.exists(file_path):
+        print(f"Error: File '{file_path}' not found.")
+        sys.exit(1)
+
+    maze = read_maze(file_path)
     start, end = find_points(maze)
 
     if not start or not end:

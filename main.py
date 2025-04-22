@@ -38,7 +38,7 @@ def show_algorithm_selection(maze_file):
     # Algorithm Dropdown with all options
     algo_option = tk.StringVar(value="A* Algorithm")
     algo_dropdown = ttk.Combobox(algo_window, textvariable=algo_option, 
-                                 values=["A* Algorithm", "BFS", "DFS"],
+                                 values=["A* Algorithm", "BFS", "DFS", "Dijkstra"],
                                  state="readonly", width=20)
     algo_dropdown.pack(pady=10)
     
@@ -50,6 +50,8 @@ def show_algorithm_selection(maze_file):
             subprocess.Popen(["python", "bfs.py", maze_file])
         elif algo == "DFS":
             subprocess.Popen(["python", "dfs.py", maze_file])
+        elif algo == "Dijkstra":
+            subprocess.Popen(["python", "dijkstra.py", maze_file])
         
         algo_window.destroy()
         # Re-enable main window elements

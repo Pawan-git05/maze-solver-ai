@@ -1,24 +1,113 @@
+# dijkstra.py
+import pygame
+import sys
+import heapq
 
-size_option = tk.StringVar(value="15")  # default
-sizes = [str(i) for i in range(8, 21)]
-size_label = tk.Label(root, text="Select Maze Size (NxN)", font=("Helvetica", 12), bg="#f0f4f8", fg="#34495e")
-size_label.pack(pady=5)
-size_dropdown = ttk.Combobox(root, textvariable=size_option, values=sizes, state="readonly", width=10)
-size_dropdown.pack(pady=10)
+CELL_SIZE = 30
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+GREEN = (0, 255, 0)
+RED = (255, 0, 0)
+BLUE = (30, 144, 255)
+GRAY = (220, 220, 220)
 
-# Start Button
-def on_enter(e): start_btn.config(bg="#3498db", fg="white")
-def on_leave(e): start_btn.config(bg="#2980b9", fg="white")
+def read_maze(file_path):
+    with open(file_path, "r") as file:
+        return [list(line.strip()) for line in file if line.strip()]
 
-start_btn = tk.Button(root, text="Start", command=start_maze, font=("Helvetica", 13, "bold"),
-                      bg="#2980b9", fg="white", activebackground="#1f618d", activeforeground="white",
-                      padx=20, pady=8, bd=0, relief="flat")
-start_btn.pack(pady=20)
-start_btn.bind("<Enter>", on_enter)
-start_btn.bind("<Leave>", on_leave)
+def find_points(maze):
+    start = end = None
+    for r, row in enumerate(maze):
+        for c, val in enumerate(row):
+            if val == 'S':
+                start = (r, c)
+            elif val == 'E':
+                end = (r, c)
+    return start, end
 
-# Footer
-footer = tk.Label(root, text="Built with ❤️ using Python & Pygame", font=("Helvetica", 9), bg="#f0f4f8", fg="#7f8c8d")
-footer.pack(side="bottom", pady=10)
+def get_neighbors(pos, maze):
+    directions = [(-1,0), (1,0), (0,-1), (0,1)]
+    rows, cols = len(maze), len(maze[0])
+    x, y = pos
+    for dx, dy in directions:
+        nx, ny = x + dx, y + dy
+        if 0 <= nx < rows and 0 <= ny < cols and maze[nx][ny] != '1':
+            yield (nx, ny)
 
-root.mainloop()
+def dijkstra(maze, start, end):
+    dist = {start: 0}
+    prev = {}
+    visited = set()
+    heap = [(0, start)]
+
+    while heap:
+        cost, current = heapq.heappop(heap)
+        if current in visited:
+            continue
+        visited.add(current)
+
+        if current == end:
+            break
+
+        for neighbor in get_neighbors(current, maze):
+            new_cost = cost + 1
+            if neighbor not in dist or new_cost < dist[neighbor]:
+                dist[neighbor] = new_cost
+                prev[neighbor] = current
+                heapq.heappush(heap, (new_cost, neighbor))
+
+    path = []
+    node = end
+    while node in prev:
+        path.append(node)
+        node = prev[node]
+    path.reverse()
+    return path
+
+def draw_maze(screen, maze, path):
+    for r, row in enumerate(maze):
+        for c, val in enumerate(row):
+            color = WHITE
+            if val == '1':
+                color = BLACK
+            elif val == 'S':
+                color = GREEN
+            elif val == 'E':
+                color = RED
+            pygame.draw.rect(screen, color, (c*CELL_SIZE, r*CELL_SIZE, CELL_SIZE, CELL_SIZE))
+            pygame.draw.rect(screen, GRAY, (c*CELL_SIZE, r*CELL_SIZE, CELL_SIZE, CELL_SIZE), 1)
+
+    for r, c in path:
+        pygame.draw.rect(screen, BLUE, (c*CELL_SIZE, r*CELL_SIZE, CELL_SIZE, CELL_SIZE))
+        pygame.display.flip()
+        pygame.time.delay(30)
+
+def main():
+    if len(sys.argv) != 2:
+        print("Usage: python dijkstra.py maze_file.txt")
+        sys.exit(1)
+
+    maze = read_maze(sys.argv[1])
+    start, end = find_points(maze)
+
+    if not start or not end:
+        print("Error: Maze must contain 'S' (start) and 'E' (end).")
+        sys.exit(1)
+
+    path = dijkstra(maze, start, end)
+
+    pygame.init()
+    screen = pygame.display.set_mode((len(maze[0]) * CELL_SIZE, len(maze) * CELL_SIZE))
+    pygame.display.set_caption("Dijkstra's Algorithm")
+
+    draw_maze(screen, maze, path)
+
+    # Wait for exit
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return
+
+if __name__ == "__main__":
+    main()
