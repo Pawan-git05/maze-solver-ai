@@ -2,9 +2,19 @@ import pygame
 import numpy as np
 import random
 import os
+import sys
 
 # Grid settings
-ROWS, COLS = 25, 25
+if len(sys.argv) > 1:
+    try:
+        SIZE = int(sys.argv[1])
+        if SIZE < 8 or SIZE > 20:  # Match main.py size range
+            raise ValueError("Size must be between 8 and 20")
+    except ValueError:
+        SIZE = 25  # Fallback to default if invalid
+else:
+    SIZE = 25  # Default size
+ROWS, COLS = SIZE, SIZE
 CELL_SIZE = 20
 MARGIN = 1
 

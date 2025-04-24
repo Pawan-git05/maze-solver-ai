@@ -10,7 +10,8 @@ def start_maze():
     maze_file = "manual_maze.txt" if choice == "Manual Maze" else "random_maze.txt"
     
     # Start maze generation process
-    process = subprocess.Popen(["python", f"{choice.lower().replace(' ', '_')}.py", size])
+    # Use "py" instead of "python" to ensure the correct environment
+    process = subprocess.Popen(["py", f"{choice.lower().replace(' ', '_')}.py", size])
     process.wait()  # Wait for maze generation to complete
 
     # Check if maze file was created
@@ -45,13 +46,13 @@ def show_algorithm_selection(maze_file):
     def run_algorithm():
         algo = algo_option.get()
         if algo == "A* Algorithm":
-            subprocess.Popen(["python", "astar.py", maze_file])
+            subprocess.Popen(["py", "astar.py", maze_file])
         elif algo == "BFS":
-            subprocess.Popen(["python", "bfs.py", maze_file])
+            subprocess.Popen(["py", "bfs.py", maze_file])
         elif algo == "DFS":
-            subprocess.Popen(["python", "dfs.py", maze_file])
+            subprocess.Popen(["py", "dfs.py", maze_file])
         elif algo == "Dijkstra":
-            subprocess.Popen(["python", "dijkstra.py", maze_file])
+            subprocess.Popen(["py", "dijkstra.py", maze_file])
         
         algo_window.destroy()
         # Re-enable main window elements
@@ -87,7 +88,7 @@ maze_dropdown.pack(pady=10)
 
 # Size Dropdown
 size_option = tk.StringVar(value="15")  # default
-sizes = [str(i) for i in range(8, 21)]
+sizes = [str(i) for i in range(15, 26)]  # Updated range from 15 to 25
 size_label = tk.Label(root, text="Select Maze Size (NxN)", font=("Helvetica", 12), bg="#f0f4f8", fg="#34495e")
 size_label.pack(pady=5)
 size_dropdown = ttk.Combobox(root, textvariable=size_option, values=sizes, state="readonly", width=10)
