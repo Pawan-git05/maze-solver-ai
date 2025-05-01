@@ -42,7 +42,30 @@ def show_algorithm_selection(maze_file):
                                  values=["A* Algorithm", "BFS", "DFS", "Dijkstra"],
                                  state="readonly", width=20)
     algo_dropdown.pack(pady=10)
+def show_algorithm_selection(maze_file):
+    # Disable main window elements
+    for widget in root.winfo_children():
+        if isinstance(widget, (tk.Button, ttk.Combobox)):
+            widget.config(state="disabled")
     
+    # Create algorithm selection window
+    algo_window = tk.Toplevel(root)
+    algo_window.title("Select Pathfinding Algorithm")
+    algo_window.geometry("300x200")
+    algo_window.configure(bg="#f0f4f8")
+    
+    # Title
+    tk.Label(algo_window, text="Select Algorithm", font=("Helvetica", 14, "bold"), 
+             fg="#2c3e50", bg="#f0f4f8").pack(pady=10)
+    
+    # Algorithm Dropdown
+    algo_option = tk.StringVar(value="A* Algorithm")
+    algo_dropdown = ttk.Combobox(algo_window, textvariable=algo_option, 
+                                 values=["A* Algorithm", "BFS", "DFS", "Dijkstra"],
+                                 state="readonly", width=20)
+    algo_dropdown.pack(pady=10)
+
+    # ✅ Run button function
     def run_algorithm():
         algo = algo_option.get()
         if algo == "A* Algorithm":
@@ -53,14 +76,11 @@ def show_algorithm_selection(maze_file):
             subprocess.Popen(["py", "dfs.py", maze_file])
         elif algo == "Dijkstra":
             subprocess.Popen(["py", "dijkstra.py", maze_file])
-        
+
         algo_window.destroy()
-        # Re-enable main window elements
-        for widget in root.winfo_children():
-            if isinstance(widget, (tk.Button, ttk.Combobox)):
-                widget.config(state="normal")
-    
-    # Run Button
+        root.destroy()  # ✅ This closes the main GUI
+
+    # ✅ Actual Run button
     run_btn = tk.Button(algo_window, text="Run", command=run_algorithm, 
                         font=("Helvetica", 12, "bold"), bg="#2980b9", fg="white",
                         activebackground="#1f618d", activeforeground="white",

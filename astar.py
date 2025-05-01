@@ -68,7 +68,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         maze_file = sys.argv[1]
     else:
-        maze_file = 'maze.txt'
+        print("Maze file not provided.")
+        sys.exit(1)
 
     maze = read_maze(maze_file)
     start, end = find_start_and_end(maze)
@@ -84,9 +85,10 @@ if __name__ == "__main__":
     end_time = time.time()
 
     if path:
-        print("\nPath found:")
+        print("\nPath found:\n")
         print_maze_with_path(maze, path)
     else:
         print("No path found.")
 
     print(f"\nTime taken to find the path: {end_time - start_time:.6f} seconds")
+    input("\nPress Enter to close...")
