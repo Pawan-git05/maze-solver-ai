@@ -4,74 +4,65 @@ import random
 import os
 import sys
 
-# Grid settings
+# Grid size from command-line or default
 if len(sys.argv) > 1:
     try:
         SIZE = int(sys.argv[1])
-        if SIZE < 8 or SIZE > 20:  # Match main.py size range
+        if SIZE < 8 or SIZE > 20:
             raise ValueError("Size must be between 8 and 20")
     except ValueError:
-        SIZE = 25  # Fallback to default if invalid
+        SIZE = 25
 else:
-    SIZE = 25  # Default size
+    SIZE = 25
 ROWS, COLS = SIZE, SIZE
 CELL_SIZE = 20
 MARGIN = 1
 
 # Colors
-BLACK = (0, 0, 0)   # Wall (1)
-WHITE = (255, 255, 255)  # Path (0)
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
 GREY = (200, 200, 200)
-GREEN = (0, 255, 128)  # Start (2)
-RED = (255, 51, 51)    # Goal (3)
-BLUE = (30, 144, 255)  # Button color (Previous/Next)
+GREEN = (0, 255, 128)
+RED = (255, 51, 51)
+BLUE = (30, 144, 255)
 DARK_GREY = (50, 50, 50)
-YELLOW = (255, 255, 0)  # Select button
+YELLOW = (255, 255, 0)
 
-# Init pygame
+# Pygame init
 pygame.init()
-WINDOW_SIZE = (COLS * (CELL_SIZE + MARGIN), ROWS * (CELL_SIZE + MARGIN) + 100)  # Add 100px for buttons
-screen = pygame.display.set_mode(WINDOW_SIZE)
+font = pygame.font.SysFont(None, 24)
+
+# Instructional Text
+instruction_lines = ["First select Start (green) and End (red)", "Click again to deselect if wrong."]
+INSTRUCTION_HEIGHT = len(instruction_lines) * 28
+GRID_TOP_OFFSET = INSTRUCTION_HEIGHT + 10
+BOTTOM_BUTTONS_HEIGHT = 80
+WINDOW_HEIGHT = GRID_TOP_OFFSET + ROWS * (CELL_SIZE + MARGIN) + BOTTOM_BUTTONS_HEIGHT
+WINDOW_WIDTH = max(300, COLS * (CELL_SIZE + MARGIN))
+screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pygame.display.set_caption("Random Maze Generator")
-font = pygame.font.SysFont(None, 30)
 
-# Maze grid: 1 = wall, 0 = path, 2 = start, 3 = goal
-grid = np.ones((ROWS, COLS), dtype=int)  # Initialize all cells as walls
-
+grid = np.ones((ROWS, COLS), dtype=int)
 start_set = False
 goal_set = False
 start_pos = (-1, -1)
 goal_pos = (-1, -1)
 
-# Maze history for Previous/Next navigation
 maze_history = []
 current_maze_index = -1
-MAX_HISTORY = 10  # Limit stored mazes to avoid memory issues
+MAX_HISTORY = 10
 
 def generate_random_maze():
     global grid, start_set, goal_set, start_pos, goal_pos
-    # Start with all walls
     grid = np.ones((ROWS, COLS), dtype=int)
-    
-    # Randomly create paths (0), but leave some walls
     for row in range(1, ROWS-1):
         for col in range(1, COLS-1):
             grid[row][col] = random.choice([0, 1])
-    
-    # Ensure the start (top-left) and goal (bottom-right) are open
-    grid[0][0] = 0  # Start
-    grid[ROWS-1][COLS-1] = 0  # Goal
-    
-    # Ensure there's a valid path between start and goal
+    grid[0][0] = 0
+    grid[ROWS-1][COLS-1] = 0
     carve_path()
-    
-    # Reset start and goal
-    start_set = False
-    goal_set = False
-    start_pos = (-1, -1)
-    goal_pos = (-1, -1)
-    
-    # Store maze in history
+    start_set = goal_set = False
+    start_pos = goal_pos = (-1, -1)
     maze_history.append(grid.copy())
     global current_maze_index
     current_maze_index = len(maze_history) - 1
@@ -96,66 +87,54 @@ def draw_button(text, x, y, w, h, color):
 
 def draw_grid():
     screen.fill(GREY)
+
+    # Draw instructions
+    for i, line in enumerate(instruction_lines):
+        text_surf = font.render(line, True, DARK_GREY)
+        text_x = (WINDOW_WIDTH - text_surf.get_width()) // 2
+        text_y = 10 + i * 28
+        screen.blit(text_surf, (text_x, text_y))
+
     for row in range(ROWS):
         for col in range(COLS):
             val = grid[row][col]
-            if val == 1:
-                color = BLACK  # Wall
-            elif val == 0:
-                color = WHITE  # Path
-            elif val == 2:
-                color = GREEN  # Start
+            color = WHITE if val == 0 else BLACK
+            if val == 2:
+                color = GREEN
             elif val == 3:
-                color = RED  # Goal
+                color = RED
             rect = [(MARGIN + CELL_SIZE) * col + MARGIN,
-                    (MARGIN + CELL_SIZE) * row + MARGIN,
+                    (MARGIN + CELL_SIZE) * row + MARGIN + GRID_TOP_OFFSET,
                     CELL_SIZE, CELL_SIZE]
             pygame.draw.rect(screen, color, rect)
-    
-    # Draw buttons
-    button_width = 120
+
+    # Buttons
+    button_width = 100
     button_height = 50
-    window_width = COLS * (CELL_SIZE + MARGIN)
+    button_y = GRID_TOP_OFFSET + ROWS * (CELL_SIZE + MARGIN) + 10
     margin = 20
-    button_y = ROWS * (CELL_SIZE + MARGIN) + 10
-    
-    # Previous button (bottom-left)
-    prev_x = margin
-    draw_button("Previous", prev_x, button_y, button_width, button_height, BLUE)
-    
-    # Select button (bottom-middle)
-    select_x = (window_width - button_width) // 2
-    draw_button("Select", select_x, button_y, button_width, button_height, YELLOW)
-    
-    # Next button (bottom-right)
-    next_x = window_width - button_width - margin
-    draw_button("Next", next_x, button_y, button_width, button_height, BLUE)
-    
+    draw_button("Previous", margin, button_y, button_width, button_height, BLUE)
+    draw_button("Select", (WINDOW_WIDTH - button_width) // 2, button_y, button_width, button_height, YELLOW)
+    draw_button("Next", WINDOW_WIDTH - button_width - margin, button_y, button_width, button_height, BLUE)
+
     pygame.display.flip()
 
 def save_maze():
     if not start_set or not goal_set:
         print("Please set both start and goal nodes before saving!")
         return
-    # Save to text file with unique name
-    maze_count = len([f for f in os.listdir() if f.startswith("random_maze_") and f.endswith(".txt")])
-    filename = f"random_maze_{maze_count + 1}.txt"
-    with open(filename, "w") as f:
+    with open("random_maze.txt", "w") as f:
         for row in grid:
-            f.write(str(row.tolist()) + "\n")
-    print(f"Saved to {filename}")
+            f.write(" ".join(map(str, row.tolist())) + "\n")
+    print("Saved to random_maze.txt")
 
 def load_previous_maze():
     global grid, current_maze_index, start_set, goal_set, start_pos, goal_pos
     if current_maze_index > 0:
         current_maze_index -= 1
         grid = maze_history[current_maze_index].copy()
-        # Reset start and goal
-        start_set = False
-        goal_set = False
-        start_pos = (-1, -1)
-        goal_pos = (-1, -1)
-        # Reapply start and goal if they exist in the grid
+        start_set = goal_set = False
+        start_pos = goal_pos = (-1, -1)
         for row in range(ROWS):
             for col in range(COLS):
                 if grid[row][col] == 2:
@@ -165,22 +144,30 @@ def load_previous_maze():
                     goal_set = True
                     goal_pos = (row, col)
 
+generate_random_maze()
 running = True
-generate_random_maze()  # Generate initial maze
 while running:
     draw_grid()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        
+
         elif event.type == pygame.MOUSEBUTTONDOWN:
             x, y = pygame.mouse.get_pos()
-            if y < ROWS * (CELL_SIZE + MARGIN):  # Grid area
+            if y > GRID_TOP_OFFSET and y < GRID_TOP_OFFSET + ROWS * (CELL_SIZE + MARGIN):
                 col = x // (CELL_SIZE + MARGIN)
-                row = y // (CELL_SIZE + MARGIN)
+                row = (y - GRID_TOP_OFFSET) // (CELL_SIZE + MARGIN)
                 if 0 <= row < ROWS and 0 <= col < COLS:
-                    if event.button == 1:  # Left-click
-                        if not start_set:
+                    if event.button == 1:
+                        if (row, col) == start_pos:
+                            grid[row][col] = 0
+                            start_pos = (-1, -1)
+                            start_set = False
+                        elif (row, col) == goal_pos:
+                            grid[row][col] = 0
+                            goal_pos = (-1, -1)
+                            goal_set = False
+                        elif not start_set:
                             grid[row][col] = 2
                             start_pos = (row, col)
                             start_set = True
@@ -188,34 +175,26 @@ while running:
                             grid[row][col] = 3
                             goal_pos = (row, col)
                             goal_set = True
-                    elif event.button == 3:  # Right-click
-                        if (row, col) == start_pos:
-                            grid[row][col] = 0
-                            start_set = False
-                            start_pos = (-1, -1)
-                        elif (row, col) == goal_pos:
-                            grid[row][col] = 0
-                            goal_set = False
-                            goal_pos = (-1, -1)
-            else:  # Button area
+            else:
                 button_width = 120
                 button_height = 50
-                window_width = COLS * (CELL_SIZE + MARGIN)
+                button_y = GRID_TOP_OFFSET + ROWS * (CELL_SIZE + MARGIN) + 10
                 margin = 20
-                button_y = ROWS * (CELL_SIZE + MARGIN) + 10
                 prev_x = margin
-                select_x = (window_width - button_width) // 2
-                next_x = window_width - button_width - margin
-                
+                select_x = (WINDOW_WIDTH - button_width) // 2
+                next_x = WINDOW_WIDTH - button_width - margin
+
                 if prev_x <= x <= prev_x + button_width and button_y <= y <= button_y + button_height:
                     load_previous_maze()
                 elif select_x <= x <= select_x + button_width and button_y <= y <= button_y + button_height:
                     save_maze()
+                    running = False
                 elif next_x <= x <= next_x + button_width and button_y <= y <= button_y + button_height:
                     generate_random_maze()
 
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_s:
                 save_maze()
+                running = False
 
 pygame.quit()

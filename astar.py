@@ -3,8 +3,22 @@ import time
 import sys
 
 def read_maze(file_path):
+    maze = []
     with open(file_path, 'r') as f:
-        return [list(map(int, line.strip().split())) for line in f if line.strip()]
+        for line in f:
+            row = list(map(int, line.strip(' []\n').split(',')))
+            maze.append(row)
+    return maze
+
+def find_start_and_end(maze):
+    start = end = None
+    for i, row in enumerate(maze):
+        for j, val in enumerate(row):
+            if val == 2:
+                start = (i, j)
+            elif val == 3:
+                end = (i, j)
+    return start, end
 
 def heuristic(a, b):
     return abs(a[0] - b[0]) + abs(a[1] - b[1])  # Manhattan distance
@@ -28,10 +42,10 @@ def astar(maze, start, end):
             return path[::-1]
 
         x, y = current
-        for dx, dy in [(-1,0),(1,0),(0,-1),(0,1)]:  # up, down, left, right
+        for dx, dy in [(-1,0),(1,0),(0,-1),(0,1)]:
             nx, ny = x + dx, y + dy
             neighbor = (nx, ny)
-            if 0 <= nx < rows and 0 <= ny < cols and maze[nx][ny] == 0:
+            if 0 <= nx < rows and 0 <= ny < cols and maze[nx][ny] in (0, 3):
                 temp_g = g_score[current] + 1
                 if neighbor not in g_score or temp_g < g_score[neighbor]:
                     g_score[neighbor] = temp_g
@@ -49,53 +63,30 @@ def print_maze_with_path(maze, path):
     for row in maze_with_path:
         print(' '.join(str(cell) for cell in row))
 
-def get_coordinates(prompt, max_row, max_col):
-    while True:
-        try:
-            coords = input(prompt).strip().split()
-            if len(coords) != 2:
-                raise ValueError
-            x, y = map(int, coords)
-            if 0 <= x < max_row and 0 <= y < max_col:
-                return (x, y)
-            else:
-                print("Coordinates out of bounds.")
-        except ValueError:
-            print("Enter two valid integers separated by space.")
-
 # === MAIN EXECUTION ===
 if __name__ == "__main__":
-    # Get maze file from command-line argument
     if len(sys.argv) > 1:
         maze_file = sys.argv[1]
     else:
-        maze_file = 'maze.txt'  # Fallback
+        maze_file = 'maze.txt'
 
     maze = read_maze(maze_file)
-    rows, cols = len(maze), len(maze[0])
+    start, end = find_start_and_end(maze)
 
-    print("Maze loaded. Dimensions:", rows, "x", cols)
+    if start is None or end is None:
+        print("Start (2) or End (3) point not found in the maze.")
+        sys.exit(1)
 
-    start = get_coordinates("Enter start position (row col): ", rows, cols)
-    end = get_coordinates("Enter end position (row col): ", rows, cols)
+    print("Maze loaded. Dimensions:", len(maze), "x", len(maze[0]))
 
-    if maze[start[0]][start[1]] != 0 or maze[end[0]][end[1]] != 0:
-        print("Start or End point is not on a walkable path (should be 0).")
+    start_time = time.time()
+    path = astar(maze, start, end)
+    end_time = time.time()
+
+    if path:
+        print("\nPath found:")
+        print_maze_with_path(maze, path)
     else:
-        # Start the timer before calling A* algorithm
-        start_time = time.time()
+        print("No path found.")
 
-        path = astar(maze, start, end)
-
-        # Stop the timer after A* finishes
-        end_time = time.time()
-
-        if path:
-            print("\nPath found:")
-            print_maze_with_path(maze, path)
-        else:
-            print("No path found.")
-
-        # Calculate and print the time taken to find the path
-        time_taken = end_time - start_time
-        print(f"\nTime taken to find the path: {time_taken:.6f} seconds")
+    print(f"\nTime taken to find the path: {end_time - start_time:.6f} seconds")
