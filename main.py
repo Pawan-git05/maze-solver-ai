@@ -107,8 +107,8 @@ maze_dropdown = ttk.Combobox(root, textvariable=option, values=["Manual Maze", "
 maze_dropdown.pack(pady=10)
 
 # Size Dropdown
-size_option = tk.StringVar(value="15")  # default
-sizes = [str(i) for i in range(15, 26)]  # Updated range from 15 to 25
+size_option = tk.StringVar(value="20")  # default
+sizes = [str(i) for i in range(20, 26)]  # Maze sizes from 20 to 25
 size_label = tk.Label(root, text="Select Maze Size (NxN)", font=("Helvetica", 12), bg="#f0f4f8", fg="#34495e")
 size_label.pack(pady=5)
 size_dropdown = ttk.Combobox(root, textvariable=size_option, values=sizes, state="readonly", width=10)

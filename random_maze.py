@@ -8,15 +8,15 @@ import sys
 if len(sys.argv) > 1:
     try:
         SIZE = int(sys.argv[1])
-        if SIZE < 8 or SIZE > 20:
-            raise ValueError("Size must be between 8 and 20")
+        if SIZE < 8 or SIZE > 25:
+            raise ValueError("Size must be between 8 and 25")
     except ValueError:
         SIZE = 25
 else:
     SIZE = 25
 
 ROWS, COLS = SIZE, SIZE
-CELL_SIZE = 20
+CELL_SIZE = max(10, 600 // SIZE)  # Dynamic cell size for large grids
 MARGIN = 1
 
 # Button constants
@@ -60,11 +60,11 @@ MAX_HISTORY = 10
 def generate_random_maze():
     global grid, start_set, goal_set, start_pos, goal_pos
     grid = np.ones((ROWS, COLS), dtype=int)
-    for row in range(1, ROWS-1):
-        for col in range(1, COLS-1):
+    for row in range(1, ROWS - 1):
+        for col in range(1, COLS - 1):
             grid[row][col] = random.choice([0, 1])
     grid[0][0] = 0
-    grid[ROWS-1][COLS-1] = 0
+    grid[ROWS - 1][COLS - 1] = 0
     carve_path()
     start_set = goal_set = False
     start_pos = goal_pos = (-1, -1)
@@ -77,7 +77,7 @@ def generate_random_maze():
 
 def carve_path():
     path_row, path_col = 0, 0
-    while path_row < ROWS-1 and path_col < COLS-1:
+    while path_row < ROWS - 1 and path_col < COLS - 1:
         grid[path_row][path_col] = 0
         if random.choice([True, False]):
             path_row += 1
