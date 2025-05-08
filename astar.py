@@ -1,94 +1,143 @@
-import heapq
+import pygame
+import ast
 import time
+import heapq
 import sys
 
-def read_maze(file_path):
-    maze = []
-    with open(file_path, 'r') as f:
-        for line in f:
-            row = list(map(int, line.strip(' []\n').split(',')))
-            maze.append(row)
-    return maze
+# Constants
+CELL_SIZE = 20
+MARGIN = 1
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+GREEN = (0, 255, 0)
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
+GREY = (200, 200, 200)
 
-def find_start_and_end(maze):
-    start = end = None
-    for i, row in enumerate(maze):
-        for j, val in enumerate(row):
-            if val == 2:
-                start = (i, j)
-            elif val == 3:
-                end = (i, j)
-    return start, end
+# Load maze from file
+if len(sys.argv) > 1:
+    maze_file = sys.argv[1]
+else:
+    maze_file = "manual_maze.txt"
 
+maze = []
+with open(maze_file, "r") as f:
+    for line in f:
+        line = line.strip()
+        if line.startswith("[") and line.endswith("]"):
+            maze.append(ast.literal_eval(line))
+        else:
+            maze.append(list(map(int, line.split())))
+
+ROWS, COLS = len(maze), len(maze[0])
+
+# Find start and end positions
+start = end = None
+for r in range(ROWS):
+    for c in range(COLS):
+        if maze[r][c] == 2:
+            start = (r, c)
+        elif maze[r][c] == 3:
+            end = (r, c)
+
+if not start or not end:
+    raise ValueError("Start or End point not defined in the maze.")
+
+# A* algorithm
 def heuristic(a, b):
-    return abs(a[0] - b[0]) + abs(a[1] - b[1])  # Manhattan distance
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
 def astar(maze, start, end):
-    rows, cols = len(maze), len(maze[0])
+    start_time = time.time()
+
     open_set = []
-    heapq.heappush(open_set, (0, start))
+    heapq.heappush(open_set, (0 + heuristic(start, end), 0, start))
     came_from = {}
     g_score = {start: 0}
+    visited = set()
 
     while open_set:
-        _, current = heapq.heappop(open_set)
+        _, current_g, current = heapq.heappop(open_set)
 
         if current == end:
             path = []
             while current in came_from:
                 path.append(current)
                 current = came_from[current]
-            path.append(start)
-            return path[::-1]
+            path.reverse()
+            duration = time.time() - start_time
+            return path, duration
 
-        x, y = current
-        for dx, dy in [(-1,0),(1,0),(0,-1),(0,1)]:
-            nx, ny = x + dx, y + dy
-            neighbor = (nx, ny)
-            if 0 <= nx < rows and 0 <= ny < cols and maze[nx][ny] in (0, 3):
-                temp_g = g_score[current] + 1
-                if neighbor not in g_score or temp_g < g_score[neighbor]:
-                    g_score[neighbor] = temp_g
-                    f_score = temp_g + heuristic(neighbor, end)
-                    heapq.heappush(open_set, (f_score, neighbor))
-                    came_from[neighbor] = current
+        visited.add(current)
 
-    return None  # No path found
+        for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
+            nr, nc = current[0] + dr, current[1] + dc
+            neighbor = (nr, nc)
+            if 0 <= nr < ROWS and 0 <= nc < COLS:
+                if maze[nr][nc] != 1 and neighbor not in visited:
+                    tentative_g = current_g + 1
+                    if tentative_g < g_score.get(neighbor, float('inf')):
+                        g_score[neighbor] = tentative_g
+                        f = tentative_g + heuristic(neighbor, end)
+                        heapq.heappush(open_set, (f, tentative_g, neighbor))
+                        came_from[neighbor] = current
 
-def print_maze_with_path(maze, path):
-    maze_with_path = [row[:] for row in maze]
-    for x, y in path:
-        if maze_with_path[x][y] == 0:
-            maze_with_path[x][y] = '*'
-    for row in maze_with_path:
-        print(' '.join(str(cell) for cell in row))
+    return None, time.time() - start_time
 
-# === MAIN EXECUTION ===
-if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        maze_file = sys.argv[1]
-    else:
-        print("Maze file not provided.")
-        sys.exit(1)
+path, time_taken = astar(maze, start, end)
 
-    maze = read_maze(maze_file)
-    start, end = find_start_and_end(maze)
+# Initialize pygame
+pygame.init()
+screen = pygame.display.set_mode(((CELL_SIZE + MARGIN) * COLS, (CELL_SIZE + MARGIN) * ROWS + 40))
+pygame.display.set_caption("A* Pathfinding Visualization")
+font = pygame.font.SysFont(None, 24)
 
-    if start is None or end is None:
-        print("Start (2) or End (3) point not found in the maze.")
-        sys.exit(1)
+def draw_maze():
+    for r in range(ROWS):
+        for c in range(COLS):
+            pos = (r, c)
+            val = maze[r][c]
 
-    print("Maze loaded. Dimensions:", len(maze), "x", len(maze[0]))
+            if val == 1:
+                color = BLACK
+            elif val == 0:
+                color = WHITE
+            elif val == 2:
+                color = GREEN
+            elif val == 3:
+                color = RED
+            else:
+                color = GREY
 
-    start_time = time.time()
-    path = astar(maze, start, end)
-    end_time = time.time()
+            if path and pos in path and pos != start and pos != end:
+                color = BLUE
 
-    if path:
-        print("\nPath found:\n")
-        print_maze_with_path(maze, path)
-    else:
-        print("No path found.")
+            rect = [(CELL_SIZE + MARGIN) * c + MARGIN,
+                    (CELL_SIZE + MARGIN) * r + MARGIN,
+                    CELL_SIZE, CELL_SIZE]
+            pygame.draw.rect(screen, color, rect)
 
-    print(f"\nTime taken to find the path: {end_time - start_time:.6f} seconds")
-    input("\nPress Enter to close...")
+    for r in range(ROWS):
+        for c in range(COLS):
+            rect = [(CELL_SIZE + MARGIN) * c + MARGIN,
+                    (CELL_SIZE + MARGIN) * r + MARGIN,
+                    CELL_SIZE, CELL_SIZE]
+            pygame.draw.rect(screen, GREY, rect, 1)
+
+def draw_info():
+    label = font.render(f"Path Found: {'Yes' if path else 'No'} | Time: {time_taken:.4f} sec", True, (0, 0, 0))
+    screen.blit(label, (10, (CELL_SIZE + MARGIN) * ROWS + 5))
+
+# Main loop
+running = True
+while running:
+    screen.fill(GREY)
+    draw_maze()
+    draw_info()
+    pygame.display.flip()
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+pygame.quit()
