@@ -1,113 +1,158 @@
-# dijkstra.py
 import pygame
+import numpy as np
 import sys
-import heapq
 
-CELL_SIZE = 30
-WHITE = (255, 255, 255)
+# Grid settings
+if len(sys.argv) > 1:
+    try:
+        SIZE = int(sys.argv[1])
+        if SIZE < 8 or SIZE > 20:
+            raise ValueError("Size must be between 8 and 20")
+    except ValueError:
+        SIZE = 25
+else:
+    SIZE = 25
+ROWS, COLS = SIZE, SIZE
+CELL_SIZE = 20
+MARGIN = 1
+
+# Colors
 BLACK = (0, 0, 0)
-GREEN = (0, 255, 0)
-RED = (255, 0, 0)
+WHITE = (255, 255, 255)
+GREY = (200, 200, 200)
+GREEN = (0, 255, 128)
+RED = (255, 51, 51)
 BLUE = (30, 144, 255)
-GRAY = (220, 220, 220)
+DARK_GREY = (50, 50, 50)
+SAVE_BLUE = (100, 100, 255)
 
-def read_maze(file_path):
-    with open(file_path, "r") as file:
-        return [list(line.strip()) for line in file if line.strip()]
+pygame.init()
 
-def find_points(maze):
-    start = end = None
-    for r, row in enumerate(maze):
-        for c, val in enumerate(row):
-            if val == 'S':
-                start = (r, c)
-            elif val == 'E':
-                end = (r, c)
-    return start, end
+# Button layout constants
+BUTTON_WIDTH = 120
+BUTTON_HEIGHT = 50
+BUTTON_MARGIN = 20
+BUTTON_SPACING = 10
 
-def get_neighbors(pos, maze):
-    directions = [(-1,0), (1,0), (0,-1), (0,1)]
-    rows, cols = len(maze), len(maze[0])
-    x, y = pos
-    for dx, dy in directions:
-        nx, ny = x + dx, y + dy
-        if 0 <= nx < rows and 0 <= ny < cols and maze[nx][ny] != '1':
-            yield (nx, ny)
+# Window size
+TOTAL_BUTTON_WIDTH = 4 * BUTTON_WIDTH + 3 * BUTTON_SPACING
+EXTRA_BOTTOM_HEIGHT = BUTTON_HEIGHT + BUTTON_MARGIN * 2
+WINDOW_WIDTH = max(COLS * (CELL_SIZE + MARGIN), TOTAL_BUTTON_WIDTH + BUTTON_MARGIN * 2)
+WINDOW_HEIGHT = ROWS * (CELL_SIZE + MARGIN) + EXTRA_BOTTOM_HEIGHT
 
-def dijkstra(maze, start, end):
-    dist = {start: 0}
-    prev = {}
-    visited = set()
-    heap = [(0, start)]
+screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+pygame.display.set_caption("Maze Builder: Click to Draw")
+font = pygame.font.SysFont(None, 30)
 
-    while heap:
-        cost, current = heapq.heappop(heap)
-        if current in visited:
-            continue
-        visited.add(current)
+# Maze grid
+grid = np.ones((ROWS, COLS), dtype=int)
 
-        if current == end:
-            break
+start_set = False
+goal_set = False
+start_pos = []
+goal_pos = (-1, -1)
 
-        for neighbor in get_neighbors(current, maze):
-            new_cost = cost + 1
-            if neighbor not in dist or new_cost < dist[neighbor]:
-                dist[neighbor] = new_cost
-                prev[neighbor] = current
-                heapq.heappush(heap, (new_cost, neighbor))
+MODE = "PATH"
 
-    path = []
-    node = end
-    while node in prev:
-        path.append(node)
-        node = prev[node]
-    path.reverse()
-    return path
+def draw_button(text, x, y, w, h, active, color):
+    pygame.draw.rect(screen, color if active else DARK_GREY, (x, y, w, h))
+    label = font.render(text, True, WHITE)
+    screen.blit(label, (x + 10, y + 10))
 
-def draw_maze(screen, maze, path):
-    for r, row in enumerate(maze):
-        for c, val in enumerate(row):
-            color = WHITE
-            if val == '1':
-                color = BLACK
-            elif val == 'S':
-                color = GREEN
-            elif val == 'E':
-                color = RED
-            pygame.draw.rect(screen, color, (c*CELL_SIZE, r*CELL_SIZE, CELL_SIZE, CELL_SIZE))
-            pygame.draw.rect(screen, GRAY, (c*CELL_SIZE, r*CELL_SIZE, CELL_SIZE, CELL_SIZE), 1)
+def draw_interface():
+    screen.fill(GREY)
+    for row in range(ROWS):
+        for col in range(COLS):
+            val = grid[row][col]
+            color = BLACK if val == 1 else WHITE if val == 0 else GREEN if val == 2 else RED
+            rect = [(MARGIN + CELL_SIZE) * col + MARGIN,
+                    (MARGIN + CELL_SIZE) * row + MARGIN,
+                    CELL_SIZE, CELL_SIZE]
+            pygame.draw.rect(screen, color, rect)
 
-    for r, c in path:
-        pygame.draw.rect(screen, BLUE, (c*CELL_SIZE, r*CELL_SIZE, CELL_SIZE, CELL_SIZE))
-        pygame.display.flip()
-        pygame.time.delay(30)
+    # Button positions
+    total_buttons_width = 4 * BUTTON_WIDTH + 3 * BUTTON_SPACING
+    start_x = (WINDOW_WIDTH - total_buttons_width) // 2
+    y = ROWS * (CELL_SIZE + MARGIN) + BUTTON_MARGIN
 
-def main():
-    if len(sys.argv) != 2:
-        print("Usage: python dijkstra.py maze_file.txt")
-        sys.exit(1)
+    path_x = start_x + BUTTON_WIDTH + BUTTON_SPACING
+    end_x = path_x + BUTTON_WIDTH + BUTTON_SPACING
+    save_x = end_x + BUTTON_WIDTH + BUTTON_SPACING
 
-    maze = read_maze(sys.argv[1])
-    start, end = find_points(maze)
+    draw_button("Add Start", start_x, y, BUTTON_WIDTH, BUTTON_HEIGHT, MODE == "START", BLUE)
+    draw_button("Add Path", path_x, y, BUTTON_WIDTH, BUTTON_HEIGHT, MODE == "PATH", BLACK)
+    draw_button("Add End", end_x, y, BUTTON_WIDTH, BUTTON_HEIGHT, MODE == "END", RED)
+    draw_button("Save Maze", save_x, y, BUTTON_WIDTH, BUTTON_HEIGHT, False, SAVE_BLUE)
 
-    if not start or not end:
-        print("Error: Maze must contain 'S' (start) and 'E' (end).")
-        sys.exit(1)
+    pygame.display.flip()
 
-    path = dijkstra(maze, start, end)
+def save_maze():
+    with open("manual_maze.txt", "w") as f:
+        for row in grid:
+            f.write(str(row.tolist()) + "\n")
+    print("Maze saved to manual_maze.txt")
 
-    pygame.init()
-    screen = pygame.display.set_mode((len(maze[0]) * CELL_SIZE, len(maze) * CELL_SIZE))
-    pygame.display.set_caption("Dijkstra's Algorithm")
+running = True
+while running:
+    draw_interface()
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
 
-    draw_maze(screen, maze, path)
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            x, y = pygame.mouse.get_pos()
+            if y < ROWS * (CELL_SIZE + MARGIN):
+                col = x // (CELL_SIZE + MARGIN)
+                row = y // (CELL_SIZE + MARGIN)
+                if 0 <= row < ROWS and 0 <= col < COLS:
+                    if grid[row][col] == 2:
+                        grid[row][col] = 1
+                        if (row, col) in start_pos:
+                            start_pos.remove((row, col))
+                    elif grid[row][col] == 3:
+                        grid[row][col] = 1
+                        goal_set = False
+                        goal_pos = (-1, -1)
+                    elif grid[row][col] == 0:
+                        grid[row][col] = 1
+                    else:
+                        if MODE == "START" and grid[row][col] != 3:
+                            grid[row][col] = 2
+                            start_pos.append((row, col))
+                        elif MODE == "END" and not goal_set and grid[row][col] != 2:
+                            grid[row][col] = 3
+                            goal_pos = (row, col)
+                            goal_set = True
+                        elif MODE == "PATH":
+                            grid[row][col] = 0
+            else:
+                total_buttons_width = 4 * BUTTON_WIDTH + 3 * BUTTON_SPACING
+                start_x = (WINDOW_WIDTH - total_buttons_width) // 2
+                y_btn = ROWS * (CELL_SIZE + MARGIN) + BUTTON_MARGIN
 
-    # Wait for exit
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                return
+                path_x = start_x + BUTTON_WIDTH + BUTTON_SPACING
+                end_x = path_x + BUTTON_WIDTH + BUTTON_SPACING
+                save_x = end_x + BUTTON_WIDTH + BUTTON_SPACING
 
-if __name__ == "__main__":
-    main()
+                if start_x <= x <= start_x + BUTTON_WIDTH and y_btn <= y <= y_btn + BUTTON_HEIGHT:
+                    MODE = "START"
+                elif path_x <= x <= path_x + BUTTON_WIDTH and y_btn <= y <= y_btn + BUTTON_HEIGHT:
+                    MODE = "PATH"
+                elif end_x <= x <= end_x + BUTTON_WIDTH and y_btn <= y <= y_btn + BUTTON_HEIGHT:
+                    MODE = "END"
+                elif save_x <= x <= save_x + BUTTON_WIDTH and y_btn <= y <= y_btn + BUTTON_HEIGHT:
+                    if start_pos and goal_set:
+                        save_maze()
+                        running = False  # Automatically close the GUI
+                    else:
+                        print("Set at least one start and one end before saving.")
+
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_s:
+                if start_pos and goal_set:
+                    save_maze()
+                    running = False
+                else:
+                    print("Set at least one start and one end before saving.")
+
+pygame.quit()

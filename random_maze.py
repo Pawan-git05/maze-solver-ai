@@ -14,9 +14,14 @@ if len(sys.argv) > 1:
         SIZE = 25
 else:
     SIZE = 25
+
 ROWS, COLS = SIZE, SIZE
 CELL_SIZE = 20
 MARGIN = 1
+
+# Button constants
+BUTTON_WIDTH = 120
+BUTTON_HEIGHT = 50
 
 # Colors
 BLACK = (0, 0, 0)
@@ -109,13 +114,11 @@ def draw_grid():
             pygame.draw.rect(screen, color, rect)
 
     # Buttons
-    button_width = 100
-    button_height = 50
     button_y = GRID_TOP_OFFSET + ROWS * (CELL_SIZE + MARGIN) + 10
     margin = 20
-    draw_button("Previous", margin, button_y, button_width, button_height, BLUE)
-    draw_button("Select", (WINDOW_WIDTH - button_width) // 2, button_y, button_width, button_height, YELLOW)
-    draw_button("Next", WINDOW_WIDTH - button_width - margin, button_y, button_width, button_height, BLUE)
+    draw_button("Previous", margin, button_y, BUTTON_WIDTH, BUTTON_HEIGHT, BLUE)
+    draw_button("Select", (WINDOW_WIDTH - BUTTON_WIDTH) // 2, button_y, BUTTON_WIDTH, BUTTON_HEIGHT, YELLOW)
+    draw_button("Next", WINDOW_WIDTH - BUTTON_WIDTH - margin, button_y, BUTTON_WIDTH, BUTTON_HEIGHT, BLUE)
 
     pygame.display.flip()
 
@@ -154,7 +157,7 @@ while running:
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
             x, y = pygame.mouse.get_pos()
-            if y > GRID_TOP_OFFSET and y < GRID_TOP_OFFSET + ROWS * (CELL_SIZE + MARGIN):
+            if GRID_TOP_OFFSET <= y < GRID_TOP_OFFSET + ROWS * (CELL_SIZE + MARGIN):
                 col = x // (CELL_SIZE + MARGIN)
                 row = (y - GRID_TOP_OFFSET) // (CELL_SIZE + MARGIN)
                 if 0 <= row < ROWS and 0 <= col < COLS:
@@ -176,20 +179,18 @@ while running:
                             goal_pos = (row, col)
                             goal_set = True
             else:
-                button_width = 120
-                button_height = 50
                 button_y = GRID_TOP_OFFSET + ROWS * (CELL_SIZE + MARGIN) + 10
                 margin = 20
                 prev_x = margin
-                select_x = (WINDOW_WIDTH - button_width) // 2
-                next_x = WINDOW_WIDTH - button_width - margin
+                select_x = (WINDOW_WIDTH - BUTTON_WIDTH) // 2
+                next_x = WINDOW_WIDTH - BUTTON_WIDTH - margin
 
-                if prev_x <= x <= prev_x + button_width and button_y <= y <= button_y + button_height:
+                if prev_x <= x <= prev_x + BUTTON_WIDTH and button_y <= y <= button_y + BUTTON_HEIGHT:
                     load_previous_maze()
-                elif select_x <= x <= select_x + button_width and button_y <= y <= button_y + button_height:
+                elif select_x <= x <= select_x + BUTTON_WIDTH and button_y <= y <= button_y + BUTTON_HEIGHT:
                     save_maze()
                     running = False
-                elif next_x <= x <= next_x + button_width and button_y <= y <= button_y + button_height:
+                elif next_x <= x <= next_x + BUTTON_WIDTH and button_y <= y <= button_y + BUTTON_HEIGHT:
                     generate_random_maze()
 
         elif event.type == pygame.KEYDOWN:
