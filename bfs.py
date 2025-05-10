@@ -1,16 +1,55 @@
-# === bfs.py ===
+# BFS-based maze solver with visualization 
+import pygame
+import ast
 import time
 import sys
 from collections import deque
 
-def read_maze(file_path):
-    with open(file_path, 'r') as f:
-        return [list(map(int, line.strip().split())) for line in f if line.strip()]
+# Constants
+CELL_SIZE = 20
+MARGIN = 1
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+GREEN = (0, 255, 0)
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
+GREY = (200, 200, 200)
 
+# Load maze from file
+if len(sys.argv) > 1:
+    maze_file = sys.argv[1]
+else:
+    maze_file = "manual_maze.txt"
+
+maze = []
+with open(maze_file, "r") as f:
+    for line in f:
+        line = line.strip()
+        if line.startswith("[") and line.endswith("]"):
+            maze.append(ast.literal_eval(line))
+        else:
+            maze.append(list(map(int, line.split())))
+
+ROWS, COLS = len(maze), len(maze[0])
+
+# Find start and end positions
+start = end = None
+for r in range(ROWS):
+    for c in range(COLS):
+        if maze[r][c] == 2:
+            start = (r, c)
+        elif maze[r][c] == 3:
+            end = (r, c)
+
+if not start or not end:
+    raise ValueError("Start or End point not defined in the maze.")
+
+# BFS algorithm
 def bfs(maze, start, end):
+    start_time = time.time()
     queue = deque([start])
-    visited = set([start])
     came_from = {}
+    visited = set([start])
 
     while queue:
         current = queue.popleft()
@@ -20,67 +59,74 @@ def bfs(maze, start, end):
             while current in came_from:
                 path.append(current)
                 current = came_from[current]
-            path.append(start)
-            return path[::-1]
+            path.reverse()
+            return path, time.time() - start_time
 
-        x, y = current
-        for dx, dy in [(-1,0),(1,0),(0,-1),(0,1)]:
-            nx, ny = x + dx, y + dy
-            neighbor = (nx, ny)
-            if 0 <= nx < len(maze) and 0 <= ny < len(maze[0]) and maze[nx][ny] == 0:
-                if neighbor not in visited:
+        for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
+            nr, nc = current[0] + dr, current[1] + dc
+            neighbor = (nr, nc)
+            if 0 <= nr < ROWS and 0 <= nc < COLS:
+                if maze[nr][nc] != 1 and neighbor not in visited:
                     queue.append(neighbor)
                     visited.add(neighbor)
                     came_from[neighbor] = current
-    return None
 
-def print_maze_with_path(maze, path):
-    maze_with_path = [row[:] for row in maze]
-    for x, y in path:
-        if maze_with_path[x][y] == 0:
-            maze_with_path[x][y] = '*'
-    for row in maze_with_path:
-        print(' '.join(str(cell) for cell in row))
+    return None, time.time() - start_time
 
-def get_coordinates(prompt, max_row, max_col):
-    while True:
-        try:
-            coords = input(prompt).strip().split()
-            if len(coords) != 2:
-                raise ValueError
-            x, y = map(int, coords)
-            if 0 <= x < max_row and 0 <= y < max_col:
-                return (x, y)
+path, time_taken = bfs(maze, start, end)
+
+# Initialize pygame
+pygame.init()
+screen = pygame.display.set_mode(((CELL_SIZE + MARGIN) * COLS, (CELL_SIZE + MARGIN) * ROWS + 40))
+pygame.display.set_caption("BFS Pathfinding Visualization")
+font = pygame.font.SysFont(None, 24)
+
+def draw_maze():
+    for r in range(ROWS):
+        for c in range(COLS):
+            pos = (r, c)
+            val = maze[r][c]
+
+            if val == 1:
+                color = BLACK
+            elif val == 0:
+                color = WHITE
+            elif val == 2:
+                color = GREEN
+            elif val == 3:
+                color = RED
             else:
-                print("Coordinates out of bounds.")
-        except ValueError:
-            print("Enter two valid integers separated by space.")
+                color = GREY
 
-if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        maze_file = sys.argv[1]
-    else:
-        maze_file = 'maze.txt'
+            if path and pos in path and pos != start and pos != end:
+                color = BLUE
 
-    maze = read_maze(maze_file)
-    rows, cols = len(maze), len(maze[0])
+            rect = [(CELL_SIZE + MARGIN) * c + MARGIN,
+                    (CELL_SIZE + MARGIN) * r + MARGIN,
+                    CELL_SIZE, CELL_SIZE]
+            pygame.draw.rect(screen, color, rect)
 
-    print("Maze loaded. Dimensions:", rows, "x", cols)
+    for r in range(ROWS):
+        for c in range(COLS):
+            rect = [(CELL_SIZE + MARGIN) * c + MARGIN,
+                    (CELL_SIZE + MARGIN) * r + MARGIN,
+                    CELL_SIZE, CELL_SIZE]
+            pygame.draw.rect(screen, GREY, rect, 1)
 
-    start = get_coordinates("Enter start position (row col): ", rows, cols)
-    end = get_coordinates("Enter end position (row col): ", rows, cols)
+def draw_info():
+    label = font.render(f"Path Found: {'Yes' if path else 'No'} | Time: {time_taken:.4f} sec", True, (0, 0, 0))
+    screen.blit(label, (10, (CELL_SIZE + MARGIN) * ROWS + 5))
 
-    if maze[start[0]][start[1]] != 0 or maze[end[0]][end[1]] != 0:
-        print("Start or End point is not on a walkable path (should be 0).")
-    else:
-        start_time = time.time()
-        path = bfs(maze, start, end)
-        end_time = time.time()
+# Main loop
+running = True
+while running:
+    screen.fill(GREY)
+    draw_maze()
+    draw_info()
+    pygame.display.flip()
 
-        if path:
-            print("\nPath found:")
-            print_maze_with_path(maze, path)
-        else:
-            print("No path found.")
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
 
-        print(f"\nTime taken to find the path: {end_time - start_time:.6f} seconds")
+pygame.quit()
