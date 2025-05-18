@@ -1,9 +1,8 @@
-# BFS-based maze solver with visualization 
 import pygame
 import ast
 import time
 import sys
-from collections import deque
+import heapq
 
 # Constants
 CELL_SIZE = 20
@@ -15,11 +14,8 @@ RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 GREY = (200, 200, 200)
 
-# Load maze from file
-if len(sys.argv) > 1:
-    maze_file = sys.argv[1]
-else:
-    maze_file = "manual_maze.txt"
+# Load maze
+maze_file = sys.argv[1] if len(sys.argv) > 1 else "manual_maze.txt"
 
 maze = []
 with open(maze_file, "r") as f:
@@ -32,7 +28,7 @@ with open(maze_file, "r") as f:
 
 ROWS, COLS = len(maze), len(maze[0])
 
-# Find start and end positions
+# Find start and end
 start = end = None
 for r in range(ROWS):
     for c in range(COLS):
@@ -44,21 +40,24 @@ for r in range(ROWS):
 if not start or not end:
     raise ValueError("Start or End point not defined in the maze.")
 
-# BFS algorithm
-def bfs(maze, start, end):
+def dijkstra(maze, start, end):
     start_time = time.time()
-    queue = deque([start])
-    came_from = {}
-    visited = set([start])
+    visited = set()
+    dist = {start: 0}
+    prev = {}
+    heap = [(0, start)]
 
-    while queue:
-        current = queue.popleft()
+    while heap:
+        cost, current = heapq.heappop(heap)
+        if current in visited:
+            continue
+        visited.add(current)
 
         if current == end:
             path = []
-            while current in came_from:
+            while current in prev:
                 path.append(current)
-                current = came_from[current]
+                current = prev[current]
             path.reverse()
             return path, time.time() - start_time
 
@@ -67,18 +66,19 @@ def bfs(maze, start, end):
             neighbor = (nr, nc)
             if 0 <= nr < ROWS and 0 <= nc < COLS:
                 if maze[nr][nc] != 1 and neighbor not in visited:
-                    queue.append(neighbor)
-                    visited.add(neighbor)
-                    came_from[neighbor] = current
-
+                    new_cost = cost + 1
+                    if new_cost < dist.get(neighbor, float('inf')):
+                        dist[neighbor] = new_cost
+                        prev[neighbor] = current
+                        heapq.heappush(heap, (new_cost, neighbor))
     return None, time.time() - start_time
 
-path, time_taken = bfs(maze, start, end)
+path, time_taken = dijkstra(maze, start, end)
 
-# Initialize pygame
+# Visualization
 pygame.init()
 screen = pygame.display.set_mode(((CELL_SIZE + MARGIN) * COLS, (CELL_SIZE + MARGIN) * ROWS + 40))
-pygame.display.set_caption("BFS Pathfinding Visualization")
+pygame.display.set_caption("Dijkstra Pathfinding Visualization")
 font = pygame.font.SysFont(None, 24)
 
 def draw_maze():
@@ -117,7 +117,6 @@ def draw_info():
     label = font.render(f"Path Found: {'Yes' if path else 'No'} | Time: {time_taken:.4f} sec", True, (0, 0, 0))
     screen.blit(label, (10, (CELL_SIZE + MARGIN) * ROWS + 5))
 
-# Main loop
 running = True
 while running:
     screen.fill(GREY)
@@ -130,34 +129,3 @@ while running:
             running = False
 
 pygame.quit()
-import heapq
-
-def dijkstra(maze, start, end):
-    start_time = time.time()
-    heap = [(0, start)]  # (cost, node)
-    came_from = {}
-    cost_so_far = {start: 0}
-
-    while heap:
-        current_cost, current = heapq.heappop(heap)
-
-        if current == end:
-            path = []
-            while current in came_from:
-                path.append(current)
-                current = came_from[current]
-            path.reverse()
-            return path, time.time() - start_time
-
-        for dr, dc in [(-1,0), (1,0), (0,-1), (0,1)]:
-            nr, nc = current[0] + dr, current[1] + dc
-            neighbor = (nr, nc)
-
-            if 0 <= nr < ROWS and 0 <= nc < COLS and maze[nr][nc] != 1:
-                new_cost = cost_so_far[current] + 1
-                if neighbor not in cost_so_far or new_cost < cost_so_far[neighbor]:
-                    cost_so_far[neighbor] = new_cost
-                    heapq.heappush(heap, (new_cost, neighbor))
-                    came_from[neighbor] = current
-
-    return None, time.time() - start_time
