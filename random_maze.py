@@ -16,10 +16,9 @@ else:
     SIZE = 25
 
 ROWS, COLS = SIZE, SIZE
-CELL_SIZE = max(10, 600 // SIZE)  # Dynamic cell size for large grids
+CELL_SIZE = max(10, 600 // SIZE)
 MARGIN = 1
 
-# Button constants
 BUTTON_WIDTH = 120
 BUTTON_HEIGHT = 50
 
@@ -33,11 +32,9 @@ BLUE = (30, 144, 255)
 DARK_GREY = (50, 50, 50)
 YELLOW = (255, 255, 0)
 
-# Pygame init
 pygame.init()
 font = pygame.font.SysFont(None, 24)
 
-# Instructional Text
 instruction_lines = ["First select Start (green) and End (red)", "Click again to deselect if wrong."]
 INSTRUCTION_HEIGHT = len(instruction_lines) * 28
 GRID_TOP_OFFSET = INSTRUCTION_HEIGHT + 10
@@ -92,8 +89,6 @@ def draw_button(text, x, y, w, h, color):
 
 def draw_grid():
     screen.fill(GREY)
-
-    # Draw instructions
     for i, line in enumerate(instruction_lines):
         text_surf = font.render(line, True, DARK_GREY)
         text_x = (WINDOW_WIDTH - text_surf.get_width()) // 2
@@ -112,8 +107,8 @@ def draw_grid():
                     (MARGIN + CELL_SIZE) * row + MARGIN + GRID_TOP_OFFSET,
                     CELL_SIZE, CELL_SIZE]
             pygame.draw.rect(screen, color, rect)
+            pygame.draw.rect(screen, GREY, rect, 1)
 
-    # Buttons
     button_y = GRID_TOP_OFFSET + ROWS * (CELL_SIZE + MARGIN) + 10
     margin = 20
     draw_button("Previous", margin, button_y, BUTTON_WIDTH, BUTTON_HEIGHT, BLUE)
@@ -130,6 +125,25 @@ def save_maze():
         for row in grid:
             f.write(" ".join(map(str, row.tolist())) + "\n")
     print("Saved to random_maze.txt")
+
+    # 🔍 Also save maze image
+    surface = pygame.Surface(((CELL_SIZE + MARGIN) * COLS, (CELL_SIZE + MARGIN) * ROWS))
+    surface.fill(GREY)
+    for row in range(ROWS):
+        for col in range(COLS):
+            val = grid[row][col]
+            color = WHITE if val == 0 else BLACK
+            if val == 2:
+                color = GREEN
+            elif val == 3:
+                color = RED
+            rect = [(MARGIN + CELL_SIZE) * col + MARGIN,
+                    (MARGIN + CELL_SIZE) * row + MARGIN,
+                    CELL_SIZE, CELL_SIZE]
+            pygame.draw.rect(surface, color, rect)
+            pygame.draw.rect(surface, GREY, rect, 1)
+    pygame.image.save(surface, "maze.png")
+    print("Maze image saved to maze.png")
 
 def load_previous_maze():
     global grid, current_maze_index, start_set, goal_set, start_pos, goal_pos

@@ -1,7 +1,8 @@
 import heapq
 import pygame
+import sys
 
-TILE_SIZE = 30
+TILE_SIZE = 20
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GREEN = (0, 255, 0)
@@ -9,30 +10,37 @@ BLUE = (0, 0, 255)
 GREY = (200, 200, 200)
 RED = (255, 0, 0)
 
-def load_maze(file_path):
-    with open(file_path, 'r') as f:
-        return [list(line.strip()) for line in f if line.strip()]
+maze_file = sys.argv[1] if len(sys.argv) > 1 else "manual_maze.txt"
 
-def find_point(maze, symbol):
-    for r, row in enumerate(maze):
-        for c, cell in enumerate(row):
-            if cell == symbol:
+def load_maze(file_path):
+    maze = []
+    with open(file_path, 'r') as f:
+        for line in f:
+            if line.startswith("[") and line.endswith("]"):
+                maze.append(eval(line.strip()))
+            else:
+                maze.append(list(map(int, line.strip().split())))
+    return maze
+
+def find_point(maze, val):
+    for r in range(len(maze)):
+        for c in range(len(maze[0])):
+            if maze[r][c] == val:
                 return (r, c)
     return None
 
 def get_neighbors(pos, maze):
-    rows, cols = len(maze), len(maze[0])
     r, c = pos
-    for dr, dc in [(-1,0), (1,0), (0,-1), (0,1)]:
+    for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
         nr, nc = r + dr, c + dc
-        if 0 <= nr < rows and 0 <= nc < cols and maze[nr][nc] != '#':
-            yield (nr, nc)
+        if 0 <= nr < len(maze) and 0 <= nc < len(maze[0]):
+            if maze[nr][nc] != 1:
+                yield (nr, nc)
 
 def dijkstra_path(maze, start, end):
     dist = {start: 0}
     prev = {}
     queue = [(0, start)]
-
     while queue:
         d, current = heapq.heappop(queue)
         if current == end:
@@ -43,7 +51,6 @@ def dijkstra_path(maze, start, end):
                 dist[neighbor] = alt
                 prev[neighbor] = current
                 heapq.heappush(queue, (alt, neighbor))
-
     path = []
     at = end
     while at in prev:
@@ -53,46 +60,41 @@ def dijkstra_path(maze, start, end):
         path.append(start)
     return path[::-1]
 
-def draw_maze(screen, maze, path):
-    for r, row in enumerate(maze):
-        for c, val in enumerate(row):
-            color = WHITE
-            if val == '#':
-                color = BLACK
-            elif val == 'S':
+maze = load_maze(maze_file)
+start = find_point(maze, 2)
+end = find_point(maze, 3)
+if not start or not end:
+    raise ValueError("Start or End not defined in maze.")
+
+path = dijkstra_path(maze, start, end)
+
+pygame.init()
+ROWS, COLS = len(maze), len(maze[0])
+surface = pygame.Surface((COLS * TILE_SIZE, ROWS * TILE_SIZE + 40))
+font = pygame.font.SysFont(None, 24)
+
+def draw_maze():
+    for r in range(ROWS):
+        for c in range(COLS):
+            val = maze[r][c]
+            color = WHITE if val == 0 else BLACK
+            if val == 2:
                 color = GREEN
-            elif val == 'E':
+            elif val == 3:
                 color = RED
-            pygame.draw.rect(screen, color, (c*TILE_SIZE, r*TILE_SIZE, TILE_SIZE, TILE_SIZE))
-            pygame.draw.rect(screen, GREY, (c*TILE_SIZE, r*TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
-
+            pygame.draw.rect(surface, color, (c*TILE_SIZE, r*TILE_SIZE, TILE_SIZE, TILE_SIZE))
+            pygame.draw.rect(surface, GREY, (c*TILE_SIZE, r*TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
     for r, c in path:
-        if maze[r][c] not in ('S', 'E'):
-            pygame.draw.rect(screen, BLUE, (c*TILE_SIZE, r*TILE_SIZE, TILE_SIZE, TILE_SIZE))
-            pygame.draw.rect(screen, GREY, (c*TILE_SIZE, r*TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
+        if maze[r][c] not in [2, 3]:
+            pygame.draw.rect(surface, BLUE, (c*TILE_SIZE, r*TILE_SIZE, TILE_SIZE, TILE_SIZE))
+            pygame.draw.rect(surface, GREY, (c*TILE_SIZE, r*TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
 
-def run_dijkstra(maze_file):
-    maze = load_maze(maze_file)
-    start = find_point(maze, 'S')
-    end = find_point(maze, 'E')
+def draw_info():
+    label = font.render(f"Path Found: {'Yes' if path else 'No'}", True, (0, 0, 0))
+    surface.blit(label, (10, ROWS * TILE_SIZE + 5))
 
-    if not start or not end:
-        print("Start or End point not found.")
-        return
-
-    path = dijkstra_path(maze, start, end)
-
-    pygame.init()
-    screen = pygame.display.set_mode((len(maze[0])*TILE_SIZE, len(maze)*TILE_SIZE))
-    pygame.display.set_caption("Dijkstra's Algorithm")
-
-    running = True
-    while running:
-        screen.fill(WHITE)
-        draw_maze(screen, maze, path)
-        pygame.display.flip()
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-    pygame.quit()
+surface.fill(GREY)
+draw_maze()
+draw_info()
+pygame.image.save(surface, "solution.png")
+pygame.quit()

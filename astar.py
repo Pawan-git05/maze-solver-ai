@@ -15,10 +15,7 @@ BLUE = (0, 0, 255)
 GREY = (200, 200, 200)
 
 # Load maze from file
-if len(sys.argv) > 1:
-    maze_file = sys.argv[1]
-else:
-    maze_file = "manual_maze.txt"
+maze_file = sys.argv[1] if len(sys.argv) > 1 else "manual_maze.txt"
 
 maze = []
 with open(maze_file, "r") as f:
@@ -49,7 +46,6 @@ def heuristic(a, b):
 
 def astar(maze, start, end):
     start_time = time.time()
-
     open_set = []
     heapq.heappush(open_set, (0 + heuristic(start, end), 0, start))
     came_from = {}
@@ -58,15 +54,13 @@ def astar(maze, start, end):
 
     while open_set:
         _, current_g, current = heapq.heappop(open_set)
-
         if current == end:
             path = []
             while current in came_from:
                 path.append(current)
                 current = came_from[current]
             path.reverse()
-            duration = time.time() - start_time
-            return path, duration
+            return path, time.time() - start_time
 
         visited.add(current)
 
@@ -81,15 +75,15 @@ def astar(maze, start, end):
                         f = tentative_g + heuristic(neighbor, end)
                         heapq.heappush(open_set, (f, tentative_g, neighbor))
                         came_from[neighbor] = current
-
     return None, time.time() - start_time
 
 path, time_taken = astar(maze, start, end)
 
-# Initialize pygame
+# Pygame rendering without opening window
 pygame.init()
-screen = pygame.display.set_mode(((CELL_SIZE + MARGIN) * COLS, (CELL_SIZE + MARGIN) * ROWS + 40))
-pygame.display.set_caption("A* Pathfinding Visualization")
+surface_height = (CELL_SIZE + MARGIN) * ROWS + 40
+surface_width = (CELL_SIZE + MARGIN) * COLS
+screen = pygame.Surface((surface_width, surface_height))
 font = pygame.font.SysFont(None, 24)
 
 def draw_maze():
@@ -97,7 +91,6 @@ def draw_maze():
         for c in range(COLS):
             pos = (r, c)
             val = maze[r][c]
-
             if val == 1:
                 color = BLACK
             elif val == 0:
@@ -117,27 +110,15 @@ def draw_maze():
                     CELL_SIZE, CELL_SIZE]
             pygame.draw.rect(screen, color, rect)
 
-    for r in range(ROWS):
-        for c in range(COLS):
-            rect = [(CELL_SIZE + MARGIN) * c + MARGIN,
-                    (CELL_SIZE + MARGIN) * r + MARGIN,
-                    CELL_SIZE, CELL_SIZE]
             pygame.draw.rect(screen, GREY, rect, 1)
 
 def draw_info():
     label = font.render(f"Path Found: {'Yes' if path else 'No'} | Time: {time_taken:.4f} sec", True, (0, 0, 0))
     screen.blit(label, (10, (CELL_SIZE + MARGIN) * ROWS + 5))
 
-# Main loop
-running = True
-while running:
-    screen.fill(GREY)
-    draw_maze()
-    draw_info()
-    pygame.display.flip()
-
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-
+# Draw everything and save
+screen.fill(GREY)
+draw_maze()
+draw_info()
+pygame.image.save(screen, "solution.png")
 pygame.quit()

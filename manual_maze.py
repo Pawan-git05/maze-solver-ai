@@ -12,6 +12,7 @@ if len(sys.argv) > 1:
         SIZE = 25
 else:
     SIZE = 25
+
 ROWS, COLS = SIZE, SIZE
 CELL_SIZE = 20
 MARGIN = 1
@@ -22,7 +23,6 @@ WHITE = (255, 255, 255)
 GREY = (200, 200, 200)
 GREEN = (0, 255, 128)
 RED = (255, 51, 51)
-BLUE = (30, 144, 255)
 DARK_GREY = (50, 50, 50)
 SAVE_BLUE = (100, 100, 255)
 
@@ -79,7 +79,7 @@ def draw_interface():
     end_x = path_x + BUTTON_WIDTH + BUTTON_SPACING
     save_x = end_x + BUTTON_WIDTH + BUTTON_SPACING
 
-    draw_button("Add Start", start_x, y, BUTTON_WIDTH, BUTTON_HEIGHT, MODE == "START", BLUE)
+    draw_button("Add Start", start_x, y, BUTTON_WIDTH, BUTTON_HEIGHT, MODE == "START", GREEN)
     draw_button("Add Path", path_x, y, BUTTON_WIDTH, BUTTON_HEIGHT, MODE == "PATH", BLACK)
     draw_button("Add End", end_x, y, BUTTON_WIDTH, BUTTON_HEIGHT, MODE == "END", RED)
     draw_button("Save Maze", save_x, y, BUTTON_WIDTH, BUTTON_HEIGHT, False, SAVE_BLUE)
@@ -91,6 +91,22 @@ def save_maze():
         for row in grid:
             f.write(str(row.tolist()) + "\n")
     print("Maze saved to manual_maze.txt")
+
+    # 🔍 Create a surface and draw the maze (excluding buttons)
+    surface = pygame.Surface(((CELL_SIZE + MARGIN) * COLS, (CELL_SIZE + MARGIN) * ROWS))
+    surface.fill(GREY)
+    for row in range(ROWS):
+        for col in range(COLS):
+            val = grid[row][col]
+            color = BLACK if val == 1 else WHITE if val == 0 else GREEN if val == 2 else RED
+            rect = [(MARGIN + CELL_SIZE) * col + MARGIN,
+                    (MARGIN + CELL_SIZE) * row + MARGIN,
+                    CELL_SIZE, CELL_SIZE]
+            pygame.draw.rect(surface, color, rect)
+            pygame.draw.rect(surface, GREY, rect, 1)
+
+    pygame.image.save(surface, "maze.png")
+    print("Maze image saved to maze.png")
 
 running = True
 while running:
@@ -143,7 +159,7 @@ while running:
                 elif save_x <= x <= save_x + BUTTON_WIDTH and y_btn <= y <= y_btn + BUTTON_HEIGHT:
                     if start_pos and goal_set:
                         save_maze()
-                        running = False  # Automatically close the GUI
+                        running = False
                     else:
                         print("Set at least one start and one end before saving.")
 
