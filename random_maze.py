@@ -119,12 +119,14 @@ def draw_grid():
 
 def save_maze():
     if not start_set or not goal_set:
-        print("Please set both start and goal nodes before saving!")
-        return
+        print("ERROR: Please set both start and goal nodes before saving!")
+        print("FAILURE: Maze generation incomplete - missing start or end point")
+        pygame.quit()
+        sys.exit(1)  # Exit with error code
     with open("random_maze.txt", "w") as f:
         for row in grid:
             f.write(" ".join(map(str, row.tolist())) + "\n")
-    print("Saved to random_maze.txt")
+    print("SUCCESS: Saved to random_maze.txt")
 
     # 🔍 Also save maze image
     surface = pygame.Surface(((CELL_SIZE + MARGIN) * COLS, (CELL_SIZE + MARGIN) * ROWS))
@@ -163,6 +165,8 @@ def load_previous_maze():
 
 generate_random_maze()
 running = True
+maze_saved = False
+
 while running:
     draw_grid()
     for event in pygame.event.get():
@@ -203,6 +207,7 @@ while running:
                     load_previous_maze()
                 elif select_x <= x <= select_x + BUTTON_WIDTH and button_y <= y <= button_y + BUTTON_HEIGHT:
                     save_maze()
+                    maze_saved = True
                     running = False
                 elif next_x <= x <= next_x + BUTTON_WIDTH and button_y <= y <= button_y + BUTTON_HEIGHT:
                     generate_random_maze()
@@ -210,6 +215,13 @@ while running:
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_s:
                 save_maze()
+                maze_saved = True
                 running = False
 
 pygame.quit()
+
+# Check if maze was properly saved
+if not maze_saved:
+    print("ERROR: Maze generation was cancelled!")
+    print("FAILURE: User closed window without setting start and end points")
+    sys.exit(1)  # Exit with error code

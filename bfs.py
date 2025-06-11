@@ -1,96 +1,108 @@
-import pygame
-import ast
-import time
+"""
+Enhanced BFS pathfinding algorithm with real-time animation.
+"""
 import sys
+import time
 from collections import deque
+from typing import List, Tuple, Optional, Dict, Set
+from algorithm_base import PathfindingAlgorithm
+from utils import get_neighbors
+from config import ALGORITHM_CONFIG
 
-# Constants
-CELL_SIZE = 20
-MARGIN = 1
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-GREEN = (0, 255, 0)
-RED = (255, 0, 0)
-BLUE = (0, 0, 255)
-GREY = (200, 200, 200)
+class BFSAlgorithm(PathfindingAlgorithm):
+    """Breadth-First Search pathfinding algorithm."""
+    
+    def __init__(self, maze_file: str, animate: bool = True):
+        super().__init__(maze_file, animate)
+        self.queue = deque()
+    
+    def solve(self) -> Tuple[Optional[List[Tuple[int, int]]], Dict]:
+        """
+        Solve maze using BFS algorithm.
+        
+        Returns:
+            Tuple of (path, statistics)
+        """
+        # Initialize queue with start position
+        self.queue.append(self.start)
+        self.visited.add(self.start)
+        
+        nodes_explored = 0
+        max_queue_size = 1
+        
+        while self.queue:
+            current = self.queue.popleft()
+            nodes_explored += 1
+            
+            # Check if we reached the goal
+            if current == self.end:
+                path = self.reconstruct_path()
+                return path, {
+                    'nodes_explored': nodes_explored,
+                    'max_queue_size': max_queue_size
+                }
+            
+            # Update animation
+            if self.animate and nodes_explored % 3 == 0:  # Update every 3 nodes for performance
+                self.stats['nodes_explored'] = nodes_explored
+                self.draw_maze(current, set(self.queue))
+                time.sleep(ALGORITHM_CONFIG['ANIMATION_DELAY'])
+            
+            # Explore neighbors
+            for neighbor in get_neighbors(current, self.rows, self.cols):
+                nr, nc = neighbor
+                
+                # Skip walls and visited nodes
+                if self.maze[nr][nc] == 1 or neighbor in self.visited:
+                    continue
+                
+                # Add to queue and mark as visited
+                self.queue.append(neighbor)
+                self.visited.add(neighbor)
+                self.came_from[neighbor] = current
+            
+            # Track maximum queue size
+            max_queue_size = max(max_queue_size, len(self.queue))
+            
+            # Timeout check
+            if time.time() - self.stats.get('start_time', time.time()) > ALGORITHM_CONFIG['TIMEOUT_SECONDS']:
+                break
+        
+        # No path found
+        return None, {
+            'nodes_explored': nodes_explored,
+            'max_queue_size': max_queue_size,
+            'timeout': True
+        }
 
-# Load maze
-maze_file = sys.argv[1] if len(sys.argv) > 1 else "manual_maze.txt"
-maze = []
-with open(maze_file, "r") as f:
-    for line in f:
-        line = line.strip()
-        if line.startswith("[") and line.endswith("]"):
-            maze.append(ast.literal_eval(line))
+def main():
+    """Main function to run BFS algorithm."""
+    maze_file = sys.argv[1] if len(sys.argv) > 1 else "manual_maze.txt"
+    animate = len(sys.argv) < 3 or sys.argv[2].lower() != 'false'
+    
+    try:
+        algorithm = BFSAlgorithm(maze_file, animate)
+        path, stats = algorithm.run()
+        
+        # Print results with clear success/failure indication
+        if path:
+            print(f"BFS Path found! Length: {len(path)}")
+            print(f"SUCCESS: Path successfully found using BFS algorithm")
         else:
-            maze.append(list(map(int, line.split())))
+            print("BFS No path found")
+            print("FAILURE: No path exists between start and end points")
 
-ROWS, COLS = len(maze), len(maze[0])
-start = end = None
-for r in range(ROWS):
-    for c in range(COLS):
-        if maze[r][c] == 2:
-            start = (r, c)
-        elif maze[r][c] == 3:
-            end = (r, c)
+        print(f"Nodes explored: {stats['nodes_explored']}")
+        print(f"Time taken: {stats['execution_time']:.3f} seconds")
+        print(f"Max queue size: {stats.get('max_queue_size', 0)}")
 
-if not start or not end:
-    raise ValueError("Start or End point not defined in the maze.")
+        if stats.get('timeout'):
+            print("Algorithm timed out")
+            print("FAILURE: Algorithm exceeded time limit")
+            
+    except Exception as e:
+        print(f"Error running BFS algorithm: {e}")
+        sys.exit(1)
 
-def bfs(maze, start, end):
-    start_time = time.time()
-    queue = deque([start])
-    came_from = {}
-    visited = set([start])
-    while queue:
-        current = queue.popleft()
-        if current == end:
-            path = []
-            while current in came_from:
-                path.append(current)
-                current = came_from[current]
-            path.reverse()
-            return path, time.time() - start_time
-        for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
-            nr, nc = current[0] + dr, current[1] + dc
-            neighbor = (nr, nc)
-            if 0 <= nr < ROWS and 0 <= nc < COLS:
-                if maze[nr][nc] != 1 and neighbor not in visited:
-                    queue.append(neighbor)
-                    visited.add(neighbor)
-                    came_from[neighbor] = current
-    return None, time.time() - start_time
-
-path, time_taken = bfs(maze, start, end)
-
-pygame.init()
-surface = pygame.Surface(((CELL_SIZE + MARGIN) * COLS, (CELL_SIZE + MARGIN) * ROWS + 40))
-font = pygame.font.SysFont(None, 24)
-
-def draw_maze():
-    for r in range(ROWS):
-        for c in range(COLS):
-            pos = (r, c)
-            val = maze[r][c]
-            color = WHITE if val == 0 else BLACK
-            if val == 2:
-                color = GREEN
-            elif val == 3:
-                color = RED
-            if path and pos in path and pos != start and pos != end:
-                color = BLUE
-            rect = [(CELL_SIZE + MARGIN) * c + MARGIN,
-                    (CELL_SIZE + MARGIN) * r + MARGIN,
-                    CELL_SIZE, CELL_SIZE]
-            pygame.draw.rect(surface, color, rect)
-            pygame.draw.rect(surface, GREY, rect, 1)
-
-def draw_info():
-    label = font.render(f"Path Found: {'Yes' if path else 'No'} | Time: {time_taken:.4f} sec", True, (0, 0, 0))
-    surface.blit(label, (10, (CELL_SIZE + MARGIN) * ROWS + 5))
-
-surface.fill(GREY)
-draw_maze()
-draw_info()
-pygame.image.save(surface, "solution.png")
-pygame.quit()
+if __name__ == "__main__":
+    main()

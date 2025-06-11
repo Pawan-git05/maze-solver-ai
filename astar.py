@@ -1,124 +1,143 @@
-import pygame
-import ast
-import time
+"""
+Enhanced A* pathfinding algorithm with real-time animation.
+"""
 import heapq
 import sys
+import time
+from typing import List, Tuple, Optional, Dict, Set
+from algorithm_base import PathfindingAlgorithm
+from utils import get_neighbors, calculate_distance
+from config import ALGORITHM_CONFIG
 
-# Constants
-CELL_SIZE = 20
-MARGIN = 1
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-GREEN = (0, 255, 0)
-RED = (255, 0, 0)
-BLUE = (0, 0, 255)
-GREY = (200, 200, 200)
+class AStarAlgorithm(PathfindingAlgorithm):
+    """A* pathfinding algorithm with heuristic optimization."""
 
-# Load maze from file
-maze_file = sys.argv[1] if len(sys.argv) > 1 else "manual_maze.txt"
+    def __init__(self, maze_file: str, animate: bool = True):
+        super().__init__(maze_file, animate)
+        self.g_score = {}  # Cost from start to node
+        self.f_score = {}  # g_score + heuristic
+        self.open_set = []  # Priority queue
+        self.open_set_hash = set()  # For O(1) membership testing
 
-maze = []
-with open(maze_file, "r") as f:
-    for line in f:
-        line = line.strip()
-        if line.startswith("[") and line.endswith("]"):
-            maze.append(ast.literal_eval(line))
+    def heuristic(self, pos: Tuple[int, int]) -> float:
+        """
+        Calculate heuristic distance (Manhattan distance) to end.
+
+        Args:
+            pos: Current position
+
+        Returns:
+            Heuristic distance to end
+        """
+        return calculate_distance(pos, self.end)
+
+    def solve(self) -> Tuple[Optional[List[Tuple[int, int]]], Dict]:
+        """
+        Solve maze using A* algorithm.
+
+        Returns:
+            Tuple of (path, statistics)
+        """
+        # Initialize scores
+        self.g_score[self.start] = 0
+        self.f_score[self.start] = self.heuristic(self.start)
+
+        # Initialize open set with start position
+        heapq.heappush(self.open_set, (self.f_score[self.start], self.start))
+        self.open_set_hash.add(self.start)
+
+        nodes_explored = 0
+        max_frontier_size = 0
+
+        while self.open_set:
+            # Get node with lowest f_score
+            current_f, current = heapq.heappop(self.open_set)
+            self.open_set_hash.remove(current)
+
+            # Check if we reached the goal
+            if current == self.end:
+                path = self.reconstruct_path()
+                return path, {
+                    'nodes_explored': nodes_explored,
+                    'max_frontier_size': max_frontier_size,
+                    'final_path_cost': self.g_score[current]
+                }
+
+            # Mark as visited
+            self.visited.add(current)
+            nodes_explored += 1
+
+            # Update animation
+            if self.animate and nodes_explored % 5 == 0:  # Update every 5 nodes for performance
+                self.stats['nodes_explored'] = nodes_explored
+                self.draw_maze(current, self.open_set_hash)
+                time.sleep(ALGORITHM_CONFIG['ANIMATION_DELAY'])
+
+            # Explore neighbors
+            for neighbor in get_neighbors(current, self.rows, self.cols):
+                nr, nc = neighbor
+
+                # Skip walls and visited nodes
+                if self.maze[nr][nc] == 1 or neighbor in self.visited:
+                    continue
+
+                # Calculate tentative g_score
+                tentative_g = self.g_score[current] + 1
+
+                # If this path to neighbor is better than any previous one
+                if neighbor not in self.g_score or tentative_g < self.g_score[neighbor]:
+                    # Record the best path
+                    self.came_from[neighbor] = current
+                    self.g_score[neighbor] = tentative_g
+                    self.f_score[neighbor] = tentative_g + self.heuristic(neighbor)
+
+                    # Add to open set if not already there
+                    if neighbor not in self.open_set_hash:
+                        heapq.heappush(self.open_set, (self.f_score[neighbor], neighbor))
+                        self.open_set_hash.add(neighbor)
+
+            # Track maximum frontier size
+            max_frontier_size = max(max_frontier_size, len(self.open_set))
+
+            # Timeout check
+            if time.time() - self.stats.get('start_time', time.time()) > ALGORITHM_CONFIG['TIMEOUT_SECONDS']:
+                break
+
+        # No path found
+        return None, {
+            'nodes_explored': nodes_explored,
+            'max_frontier_size': max_frontier_size,
+            'timeout': True
+        }
+
+def main():
+    """Main function to run A* algorithm."""
+    maze_file = sys.argv[1] if len(sys.argv) > 1 else "manual_maze.txt"
+    animate = len(sys.argv) < 3 or sys.argv[2].lower() != 'false'
+
+    try:
+        algorithm = AStarAlgorithm(maze_file, animate)
+        path, stats = algorithm.run()
+
+        # Print results with clear success/failure indication
+        if path:
+            print(f"A* Path found! Length: {len(path)}")
+            print(f"SUCCESS: Path successfully found using A* algorithm")
         else:
-            maze.append(list(map(int, line.split())))
+            print("A* No path found")
+            print("FAILURE: No path exists between start and end points")
 
-ROWS, COLS = len(maze), len(maze[0])
+        print(f"Nodes explored: {stats['nodes_explored']}")
+        print(f"Time taken: {stats['execution_time']:.3f} seconds")
+        print(f"Max frontier size: {stats.get('max_frontier_size', 0)}")
 
-# Find start and end positions
-start = end = None
-for r in range(ROWS):
-    for c in range(COLS):
-        if maze[r][c] == 2:
-            start = (r, c)
-        elif maze[r][c] == 3:
-            end = (r, c)
+        if stats.get('timeout'):
+            print("Algorithm timed out")
+            print("FAILURE: Algorithm exceeded time limit")
 
-if not start or not end:
-    raise ValueError("Start or End point not defined in the maze.")
+    except Exception as e:
+        print(f"Error running A* algorithm: {e}")
+        sys.exit(1)
 
-# A* algorithm
-def heuristic(a, b):
-    return abs(a[0] - b[0]) + abs(a[1] - b[1])
-
-def astar(maze, start, end):
-    start_time = time.time()
-    open_set = []
-    heapq.heappush(open_set, (0 + heuristic(start, end), 0, start))
-    came_from = {}
-    g_score = {start: 0}
-    visited = set()
-
-    while open_set:
-        _, current_g, current = heapq.heappop(open_set)
-        if current == end:
-            path = []
-            while current in came_from:
-                path.append(current)
-                current = came_from[current]
-            path.reverse()
-            return path, time.time() - start_time
-
-        visited.add(current)
-
-        for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
-            nr, nc = current[0] + dr, current[1] + dc
-            neighbor = (nr, nc)
-            if 0 <= nr < ROWS and 0 <= nc < COLS:
-                if maze[nr][nc] != 1 and neighbor not in visited:
-                    tentative_g = current_g + 1
-                    if tentative_g < g_score.get(neighbor, float('inf')):
-                        g_score[neighbor] = tentative_g
-                        f = tentative_g + heuristic(neighbor, end)
-                        heapq.heappush(open_set, (f, tentative_g, neighbor))
-                        came_from[neighbor] = current
-    return None, time.time() - start_time
-
-path, time_taken = astar(maze, start, end)
-
-# Pygame rendering without opening window
-pygame.init()
-surface_height = (CELL_SIZE + MARGIN) * ROWS + 40
-surface_width = (CELL_SIZE + MARGIN) * COLS
-screen = pygame.Surface((surface_width, surface_height))
-font = pygame.font.SysFont(None, 24)
-
-def draw_maze():
-    for r in range(ROWS):
-        for c in range(COLS):
-            pos = (r, c)
-            val = maze[r][c]
-            if val == 1:
-                color = BLACK
-            elif val == 0:
-                color = WHITE
-            elif val == 2:
-                color = GREEN
-            elif val == 3:
-                color = RED
-            else:
-                color = GREY
-
-            if path and pos in path and pos != start and pos != end:
-                color = BLUE
-
-            rect = [(CELL_SIZE + MARGIN) * c + MARGIN,
-                    (CELL_SIZE + MARGIN) * r + MARGIN,
-                    CELL_SIZE, CELL_SIZE]
-            pygame.draw.rect(screen, color, rect)
-
-            pygame.draw.rect(screen, GREY, rect, 1)
-
-def draw_info():
-    label = font.render(f"Path Found: {'Yes' if path else 'No'} | Time: {time_taken:.4f} sec", True, (0, 0, 0))
-    screen.blit(label, (10, (CELL_SIZE + MARGIN) * ROWS + 5))
-
-# Draw everything and save
-screen.fill(GREY)
-draw_maze()
-draw_info()
-pygame.image.save(screen, "solution.png")
-pygame.quit()
+if __name__ == "__main__":
+    main()

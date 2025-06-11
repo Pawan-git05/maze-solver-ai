@@ -90,7 +90,7 @@ def save_maze():
     with open("manual_maze.txt", "w") as f:
         for row in grid:
             f.write(str(row.tolist()) + "\n")
-    print("Maze saved to manual_maze.txt")
+    print("SUCCESS: Maze saved to manual_maze.txt")
 
     # 🔍 Create a surface and draw the maze (excluding buttons)
     surface = pygame.Surface(((CELL_SIZE + MARGIN) * COLS, (CELL_SIZE + MARGIN) * ROWS))
@@ -109,6 +109,8 @@ def save_maze():
     print("Maze image saved to maze.png")
 
 running = True
+maze_saved = False
+
 while running:
     draw_interface()
     for event in pygame.event.get():
@@ -159,16 +161,24 @@ while running:
                 elif save_x <= x <= save_x + BUTTON_WIDTH and y_btn <= y <= y_btn + BUTTON_HEIGHT:
                     if start_pos and goal_set:
                         save_maze()
+                        maze_saved = True
                         running = False
                     else:
-                        print("Set at least one start and one end before saving.")
+                        print("ERROR: Set at least one start and one end before saving.")
 
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_s:
                 if start_pos and goal_set:
                     save_maze()
+                    maze_saved = True
                     running = False
                 else:
-                    print("Set at least one start and one end before saving.")
+                    print("ERROR: Set at least one start and one end before saving.")
 
 pygame.quit()
+
+# Check if maze was properly saved
+if not maze_saved:
+    print("ERROR: Maze creation was cancelled!")
+    print("FAILURE: User closed window without setting start and end points")
+    sys.exit(1)  # Exit with error code

@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🧠 AI Maze Solver</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    .controls {
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      align-items: center;
+    }
+
+    .controls-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 30px;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .control-group {
+      background: #f8f9fa;
+      padding: 25px;
+      border-radius: 15px;
+      border: 2px solid #e9ecef;
+      transition: all 0.3s ease;
+      text-align: center;
+    }
+
+    .control-group:hover {
+      border-color: #4facfe;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .control-group label {
+      display: block;
+      font-weight: 600;
+      font-size: 1.2rem;
+      margin-bottom: 15px;
+      color: #495057;
+      text-align: center;
+    }
+
+    .control-group.maze-type label {
+      color: #28a745;
+    }
+
+    .control-group.maze-size label {
+      color: #007bff;
+    }
+
+    .control-group.algorithm label {
+      color: #6f42c1;
+    }
+
+    select, button {
+      width: 100%;
+      padding: 15px 20px;
+      font-size: 16px;
+      border: 2px solid #dee2e6;
+      border-radius: 10px;
+      background: white;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+
+    select:focus, button:focus {
+      outline: none;
+      border-color: #4facfe;
+      box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+    }
+
+    .control-group.maze-type select:focus {
+      border-color: #28a745;
+      box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+    }
+
+    .control-group.maze-size select:focus {
+      border-color: #007bff;
+      box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    }
+
+    .control-group.algorithm select:focus {
+      border-color: #6f42c1;
+      box-shadow: 0 0 0 3px rgba(111, 66, 193, 0.1);
+    }
+
+    .solve-button {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 20px;
+    }
+
+    .solve-button button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-weight: 600;
+      font-size: 1.2rem;
+      padding: 15px 30px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .solve-button button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .solve-button button:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #4facfe;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .results {
+      display: none;
+      padding: 40px;
+      background: #f8f9fa;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+
+    .result-item {
+      background: white;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .result-header {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+      padding: 15px 20px;
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+
+    .result-content {
+      padding: 20px;
+    }
+
+    .result-image {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+    }
+
+    .stats {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .stats h3 {
+      color: #495057;
+      margin-bottom: 20px;
+      font-size: 1.3rem;
+    }
+
+    .stat-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #e9ecef;
+    }
+
+    .stat-item:last-child {
+      border-bottom: none;
+    }
+
+    .stat-label {
+      font-weight: 500;
+      color: #6c757d;
+    }
+
+    .stat-value {
+      font-weight: 600;
+      color: #495057;
+    }
+
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      border: 1px solid #f5c6cb;
+    }
+
+    /* Maze Editor Styles */
+    .maze-editor {
+      display: none;
+      background: white;
+      border-radius: 15px;
+      padding: 30px;
+      margin: 20px 0;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .maze-editor h3 {
+      color: #495057;
+      margin-bottom: 20px;
+      text-align: center;
+      font-size: 1.4rem;
+    }
+
+    .editor-controls {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .editor-btn {
+      padding: 10px 20px;
+      border: 2px solid #dee2e6;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+
+    .editor-btn.active {
+      background: #4facfe;
+      color: white;
+      border-color: #4facfe;
+    }
+
+    .editor-btn:hover {
+      border-color: #4facfe;
+      transform: translateY(-1px);
+    }
+
+    .maze-canvas-container {
+      display: flex;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    .maze-canvas {
+      border: 2px solid #dee2e6;
+      border-radius: 8px;
+      cursor: crosshair;
+      background: white;
+    }
+
+    .maze-legend {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: #6c757d;
+    }
+
+    .legend-color {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: 1px solid #dee2e6;
+    }
+
+    .editor-actions {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .editor-actions button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+
+    .btn-success {
+      background: #28a745;
+      color: white;
+    }
+
+    .btn-primary:hover, .btn-secondary:hover, .btn-success:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    @media (max-width: 768px) {
+      .controls-row {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+
+      .controls {
+        padding: 20px;
+      }
+
+      .results-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .header h1 {
+        font-size: 2rem;
+      }
+
+      .control-group {
+        padding: 20px;
+      }
+    }
+
+    @media (max-width: 1024px) and (min-width: 769px) {
+      .controls-row {
+        gap: 20px;
+      }
+
+      .control-group {
+        padding: 20px;
+      }
+
+      .control-group label {
+        font-size: 1.1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🧠 AI Maze Solver</h1>
+      <p>Generate mazes and solve them using advanced pathfinding algorithms</p>
+    </div>
+
+    <div class="controls">
+      <div class="controls-row">
+        <div class="control-group maze-type">
+          <label for="mazeType">🏗️ Maze Type</label>
+          <select id="mazeType" onchange="handleMazeTypeChange()">
+            <option value="random">Random Generated</option>
+            <option value="custom">Custom Design</option>
+          </select>
+        </div>
+
+        <div class="control-group maze-size">
+          <label for="size">📏 Maze Size</label>
+          <select id="size">
+            <option value="15">Small (15x15)</option>
+            <option value="20">Medium (20x20)</option>
+            <option value="25" selected>Large (25x25)</option>
+            <option value="30">Extra Large (30x30)</option>
+          </select>
+        </div>
+
+        <div class="control-group algorithm">
+          <label for="algorithm">🤖 Algorithm</label>
+          <select id="algorithm">
+            <option value="astar">A* (Optimal & Fast)</option>
+            <option value="bfs">BFS (Shortest Path)</option>
+            <option value="dfs">DFS (Memory Efficient)</option>
+            <option value="dijkstra">Dijkstra (Weighted)</option>
+            <option value="bidirectional">Bidirectional (Advanced)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="solve-button">
+        <button id="solveBtn" onclick="handleSolveClick()">🚀 Solve Maze</button>
+      </div>
+    </div>
+
+    <!-- Maze Editor Section -->
+    <div class="maze-editor" id="mazeEditor">
+      <h3>🎨 Interactive Maze Designer</h3>
+      <p style="text-align: center; color: #6c757d; margin-bottom: 20px;">
+        Click and drag to draw. Set exactly one start (green) and one end (red) point.
+      </p>
+
+      <div class="editor-controls">
+        <button class="editor-btn active" data-mode="wall" onclick="setEditMode('wall')">
+          🧱 Draw Walls
+        </button>
+        <button class="editor-btn" data-mode="path" onclick="setEditMode('path')">
+          🛤️ Draw Paths
+        </button>
+        <button class="editor-btn" data-mode="start" onclick="setEditMode('start')">
+          🟢 Set Start
+        </button>
+        <button class="editor-btn" data-mode="end" onclick="setEditMode('end')">
+          🔴 Set End
+        </button>
+        <button class="editor-btn" onclick="clearMaze()">
+          🗑️ Clear All
+        </button>
+        <button class="editor-btn" onclick="generateRandomMaze()">
+          🎲 Random Fill
+        </button>
+        <button class="editor-btn" onclick="createBorderWalls()">
+          🔲 Add Borders
+        </button>
+      </div>
+
+      <div class="maze-canvas-container">
+        <canvas id="mazeCanvas" class="maze-canvas" width="500" height="500"></canvas>
+      </div>
+
+      <div class="maze-legend">
+        <div class="legend-item">
+          <div class="legend-color" style="background: #000;"></div>
+          <span>Wall (impassable)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #fff; border: 2px solid #ddd;"></div>
+          <span>Path (walkable)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #28a745;"></div>
+          <span>Start point</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #dc3545;"></div>
+          <span>End point</span>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin: 15px 0; padding: 10px; background: #e3f2fd; border-radius: 8px;">
+        <span id="mazeStatus" style="font-weight: 500; color: #1976d2;">
+          Status: Ready to design
+        </span>
+      </div>
+
+      <div class="editor-actions">
+        <button class="btn-secondary" onclick="hideMazeEditor()">
+          ❌ Cancel
+        </button>
+        <button class="btn-primary" onclick="validateAndPreview()">
+          👁️ Preview
+        </button>
+        <button class="btn-success" onclick="saveMazeAndSolve()" id="saveBtn" disabled>
+          ✅ Save & Solve
+        </button>
+      </div>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>Generating and solving maze... This may take a few moments.</p>
+    </div>
+
+    <div class="results" id="results">
+      <div class="results-grid">
+        <div class="result-item">
+          <div class="result-header">🧱 Original Maze</div>
+          <div class="result-content">
+            <img id="mazeImage" class="result-image" alt="Generated maze" />
+          </div>
+        </div>
+
+        <div class="result-item">
+          <div class="result-header">✅ Solved Maze</div>
+          <div class="result-content">
+            <img id="solutionImage" class="result-image" alt="Solved maze with path" />
+          </div>
+        </div>
+      </div>
+
+      <div class="stats" id="stats">
+        <h3>📊 Algorithm Performance</h3>
+        <div id="statsContent">
+          <!-- Stats will be populated by JavaScript -->
+        </div>
+      </div>
+    </div>
+
+    <div id="error" class="error" style="display: none;"></div>
+  </div>
+
+  <script>
+    let isProcessing = false;
+
+    // Maze Editor Variables
+    let mazeGrid = [];
+    let mazeSize = 25;
+    let cellSize = 20;
+    let editMode = 'wall';
+    let isDrawing = false;
+    let startPos = null;
+    let endPos = null;
+
+    // Handle maze type change
+    function handleMazeTypeChange() {
+      const mazeType = document.getElementById('mazeType').value;
+      const solveBtn = document.getElementById('solveBtn');
+
+      if (mazeType === 'custom') {
+        solveBtn.textContent = '🎨 Design Maze';
+      } else {
+        solveBtn.textContent = '🚀 Solve Maze';
+      }
+    }
+
+    // Handle solve button click
+    function handleSolveClick() {
+      const mazeType = document.getElementById('mazeType').value;
+
+      if (mazeType === 'custom') {
+        showMazeEditor();
+      } else {
+        solveMaze();
+      }
+    }
+
+    // Maze Editor Functions
+    function initializeMazeEditor() {
+      const canvas = document.getElementById('mazeCanvas');
+      const ctx = canvas.getContext('2d');
+
+      // Get current maze size
+      mazeSize = parseInt(document.getElementById('size').value);
+
+      // Initialize empty maze grid (start with paths)
+      mazeGrid = [];
+      for (let i = 0; i < mazeSize; i++) {
+        mazeGrid[i] = [];
+        for (let j = 0; j < mazeSize; j++) {
+          mazeGrid[i][j] = 0; // Start with paths
+        }
+      }
+
+      // Reset positions
+      startPos = null;
+      endPos = null;
+
+      // Set canvas size based on maze size
+      const maxCanvasSize = Math.min(500, window.innerWidth - 100);
+      cellSize = Math.floor(maxCanvasSize / mazeSize);
+      canvas.width = mazeSize * cellSize;
+      canvas.height = mazeSize * cellSize;
+
+      drawMaze();
+      setupCanvasEvents();
+      updateMazeStatus();
+    }
+
+    function drawMaze() {
+      const canvas = document.getElementById('mazeCanvas');
+      const ctx = canvas.getContext('2d');
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < mazeSize; i++) {
+        for (let j = 0; j < mazeSize; j++) {
+          const x = j * cellSize;
+          const y = i * cellSize;
+
+          // Determine cell color
+          let color = '#000'; // Wall (black)
+          if (mazeGrid[i][j] === 0) color = '#fff'; // Path (white)
+          if (mazeGrid[i][j] === 2) color = '#28a745'; // Start (green)
+          if (mazeGrid[i][j] === 3) color = '#dc3545'; // End (red)
+
+          ctx.fillStyle = color;
+          ctx.fillRect(x, y, cellSize, cellSize);
+
+          // Draw grid lines
+          ctx.strokeStyle = '#ddd';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x, y, cellSize, cellSize);
+
+          // Add hover effect for current edit mode
+          if (editMode === 'start' && mazeGrid[i][j] === 2) {
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
+          } else if (editMode === 'end' && mazeGrid[i][j] === 3) {
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
+          }
+        }
+      }
+    }
+
+    function setupCanvasEvents() {
+      const canvas = document.getElementById('mazeCanvas');
+
+      canvas.addEventListener('mousedown', (e) => {
+        isDrawing = true;
+        handleCanvasClick(e);
+      });
+
+      canvas.addEventListener('mousemove', (e) => {
+        if (isDrawing && (editMode === 'wall' || editMode === 'path')) {
+          handleCanvasClick(e);
+        }
+      });
+
+      canvas.addEventListener('mouseup', () => {
+        isDrawing = false;
+      });
+
+      canvas.addEventListener('mouseleave', () => {
+        isDrawing = false;
+      });
+    }
+
+    function handleCanvasClick(e) {
+      const canvas = document.getElementById('mazeCanvas');
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const col = Math.floor(x / cellSize);
+      const row = Math.floor(y / cellSize);
+
+      if (row >= 0 && row < mazeSize && col >= 0 && col < mazeSize) {
+        switch (editMode) {
+          case 'wall':
+            if (mazeGrid[row][col] !== 2 && mazeGrid[row][col] !== 3) {
+              mazeGrid[row][col] = 1;
+            }
+            break;
+          case 'path':
+            if (mazeGrid[row][col] !== 2 && mazeGrid[row][col] !== 3) {
+              mazeGrid[row][col] = 0;
+            }
+            break;
+          case 'start':
+            // Remove previous start
+            if (startPos) {
+              mazeGrid[startPos.row][startPos.col] = 0;
+            }
+            mazeGrid[row][col] = 2;
+            startPos = { row, col };
+            break;
+          case 'end':
+            // Remove previous end
+            if (endPos) {
+              mazeGrid[endPos.row][endPos.col] = 0;
+            }
+            mazeGrid[row][col] = 3;
+            endPos = { row, col };
+            break;
+        }
+        drawMaze();
+        updateMazeStatus();
+      }
+    }
+
+    function setEditMode(mode) {
+      editMode = mode;
+
+      // Update button states
+      document.querySelectorAll('.editor-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+
+      const targetBtn = document.querySelector(`[data-mode="${mode}"]`);
+      if (targetBtn) {
+        targetBtn.classList.add('active');
+      }
+
+      updateMazeStatus();
+    }
+
+    function clearMaze() {
+      for (let i = 0; i < mazeSize; i++) {
+        for (let j = 0; j < mazeSize; j++) {
+          mazeGrid[i][j] = 0; // Clear to paths
+        }
+      }
+      startPos = null;
+      endPos = null;
+      drawMaze();
+      updateMazeStatus();
+    }
+
+    function generateRandomMaze() {
+      // Clear first
+      clearMaze();
+
+      // Generate random walls (30% density)
+      for (let i = 1; i < mazeSize - 1; i++) {
+        for (let j = 1; j < mazeSize - 1; j++) {
+          mazeGrid[i][j] = Math.random() < 0.3 ? 1 : 0;
+        }
+      }
+
+      drawMaze();
+      updateMazeStatus();
+    }
+
+    function createBorderWalls() {
+      // Add walls around the border
+      for (let i = 0; i < mazeSize; i++) {
+        if (mazeGrid[0][i] !== 2 && mazeGrid[0][i] !== 3) mazeGrid[0][i] = 1; // Top
+        if (mazeGrid[mazeSize-1][i] !== 2 && mazeGrid[mazeSize-1][i] !== 3) mazeGrid[mazeSize-1][i] = 1; // Bottom
+        if (mazeGrid[i][0] !== 2 && mazeGrid[i][0] !== 3) mazeGrid[i][0] = 1; // Left
+        if (mazeGrid[i][mazeSize-1] !== 2 && mazeGrid[i][mazeSize-1] !== 3) mazeGrid[i][mazeSize-1] = 1; // Right
+      }
+
+      drawMaze();
+      updateMazeStatus();
+    }
+
+    function updateMazeStatus() {
+      const statusEl = document.getElementById('mazeStatus');
+      const saveBtn = document.getElementById('saveBtn');
+
+      let status = '';
+      let canSolve = false;
+
+      if (!startPos && !endPos) {
+        status = 'Status: Set start (green) and end (red) points';
+      } else if (!startPos) {
+        status = 'Status: Set start point (green)';
+      } else if (!endPos) {
+        status = 'Status: Set end point (red)';
+      } else {
+        status = 'Status: Ready to solve! ✅';
+        canSolve = true;
+      }
+
+      statusEl.textContent = status;
+      statusEl.style.color = canSolve ? '#28a745' : '#1976d2';
+      saveBtn.disabled = !canSolve;
+    }
+
+    function showMazeEditor() {
+      document.getElementById('mazeEditor').style.display = 'block';
+      initializeMazeEditor();
+
+      // Scroll to editor
+      document.getElementById('mazeEditor').scrollIntoView({
+        behavior: 'smooth'
+      });
+    }
+
+    function hideMazeEditor() {
+      document.getElementById('mazeEditor').style.display = 'none';
+    }
+
+    function validateAndPreview() {
+      if (!startPos || !endPos) {
+        alert('Please set both start (green) and end (red) points first!');
+        return;
+      }
+
+      // Simple path validation - check if start and end are not walls
+      if (mazeGrid[startPos.row][startPos.col] !== 2 || mazeGrid[endPos.row][endPos.col] !== 3) {
+        alert('Start or end points are invalid!');
+        return;
+      }
+
+      alert(`Maze is ready!\n\nStart: Row ${startPos.row + 1}, Col ${startPos.col + 1}\nEnd: Row ${endPos.row + 1}, Col ${endPos.col + 1}\n\nClick "Save & Solve" to proceed.`);
+    }
+
+    async function saveMazeAndSolve() {
+      // Validate maze has start and end
+      if (!startPos || !endPos) {
+        alert('Please set both start (green) and end (red) points before solving!');
+        return;
+      }
+
+      console.log('🎨 Saving custom maze and solving...');
+      console.log('Start position:', startPos);
+      console.log('End position:', endPos);
+      console.log('Maze size:', mazeSize);
+      console.log('Maze grid:', mazeGrid);
+
+      // Hide editor
+      hideMazeEditor();
+
+      // Convert maze grid to the format expected by backend
+      const mazeData = {
+        maze_type: 'custom',
+        size: mazeSize,
+        algorithm: document.getElementById("algorithm").value,
+        maze_grid: mazeGrid
+      };
+
+      console.log('📡 Sending maze data:', mazeData);
+
+      // Solve the custom maze
+      await solveMazeWithData(mazeData);
+    }
+
+    async function solveMaze() {
+      if (isProcessing) return;
+
+      // For random mazes, proceed normally
+      const mazeData = {
+        maze_type: 'random',
+        size: parseInt(document.getElementById("size").value),
+        algorithm: document.getElementById("algorithm").value
+      };
+
+      await solveMazeWithData(mazeData);
+    }
+
+    async function solveMazeWithData(mazeData) {
+      if (isProcessing) return;
+
+      const solveBtn = document.getElementById('solveBtn');
+      const loading = document.getElementById('loading');
+      const results = document.getElementById('results');
+      const errorDiv = document.getElementById('error');
+
+      // Reset UI
+      results.style.display = 'none';
+      errorDiv.style.display = 'none';
+      loading.style.display = 'block';
+
+      // Disable button and show loading state
+      isProcessing = true;
+      solveBtn.disabled = true;
+      solveBtn.textContent = '🔄 Processing...';
+
+      try {
+        const startTime = Date.now();
+
+        console.log('📡 Sending request to /solve endpoint...');
+
+        const response = await fetch('/solve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(mazeData)
+        });
+
+        console.log('📥 Response received:', response.status, response.statusText);
+
+        const data = await response.json();
+        console.log('📋 Response data:', data);
+
+        if (response.ok) {
+          // Display maze image (always available)
+          document.getElementById("mazeImage").src = "data:image/png;base64," + data.maze;
+
+          if (data.success && data.path_found) {
+            // Path was found - show solution
+            document.getElementById("solutionImage").src = "data:image/png;base64," + data.solution;
+
+            // Update solution header to show success
+            document.querySelector('.result-item:nth-child(2) .result-header').innerHTML = '✅ Solved Maze';
+            document.querySelector('.result-item:nth-child(2) .result-header').style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+
+          } else {
+            // No path found - show message
+            const solutionContent = document.querySelector('.result-item:nth-child(2) .result-content');
+            solutionContent.innerHTML = `
+              <div style="padding: 40px; text-align: center; background: #f8f9fa; border-radius: 8px;">
+                <div style="font-size: 48px; margin-bottom: 20px;">❌</div>
+                <h3 style="color: #dc3545; margin-bottom: 15px;">No Path Found</h3>
+                <p style="color: #6c757d; margin-bottom: 20px;">${data.message || 'No path exists between the start and end points.'}</p>
+                <p style="color: #6c757d; font-size: 14px;">Try a different maze or check that start and end points are accessible.</p>
+              </div>
+            `;
+
+            // Update solution header to show failure
+            document.querySelector('.result-item:nth-child(2) .result-header').innerHTML = '❌ No Solution';
+            document.querySelector('.result-item:nth-child(2) .result-header').style.background = 'linear-gradient(135deg, #dc3545 0%, #fd7e14 100%)';
+          }
+
+          // Display statistics
+          displayStats(data, Date.now() - startTime);
+
+          // Show results
+          loading.style.display = 'none';
+          results.style.display = 'block';
+
+        } else {
+          throw new Error(data.error || 'Unknown error occurred');
+        }
+
+      } catch (error) {
+        console.error('Error solving maze:', error);
+        loading.style.display = 'none';
+
+        // Check if it's a user cancellation error
+        if (error.message.includes('cancelled') || error.message.includes('start and end points')) {
+          errorDiv.innerHTML = `
+            <div style="text-align: center;">
+              <div style="font-size: 48px; margin-bottom: 15px;">⚠️</div>
+              <h3 style="color: #dc3545; margin-bottom: 15px;">Maze Generation Cancelled</h3>
+              <p style="margin-bottom: 15px;">${error.message}</p>
+              <p style="color: #6c757d; font-size: 14px;">
+                <strong>Instructions:</strong><br>
+                1. Click on the maze to set start point (green)<br>
+                2. Click again to set end point (red)<br>
+                3. Click "Select" button to save the maze<br>
+                4. Do not close the window before clicking "Select"
+              </p>
+            </div>
+          `;
+        } else {
+          errorDiv.textContent = `Error: ${error.message}`;
+        }
+
+        errorDiv.style.display = 'block';
+      } finally {
+        // Re-enable button
+        isProcessing = false;
+        solveBtn.disabled = false;
+        solveBtn.textContent = '🚀 Solve Maze';
+      }
+    }
+
+    function displayStats(data, totalTime) {
+      const statsContent = document.getElementById('statsContent');
+
+      // Determine status based on whether path was found
+      const status = data.path_found ? '✅ Path Found' : '❌ No Path Found';
+      const statusColor = data.path_found ? '#28a745' : '#dc3545';
+
+      const stats = [
+        { label: 'Algorithm Used', value: data.algorithm.toUpperCase() },
+        { label: 'Maze Type', value: data.maze_type === 'random' ? 'Random Generated' : 'Manual Design' },
+        { label: 'Maze Size', value: `${data.size}×${data.size}` },
+        { label: 'Processing Time', value: `${data.processing_time}s` },
+        { label: 'Total Time', value: `${(totalTime / 1000).toFixed(2)}s` },
+        { label: 'Status', value: status, color: statusColor }
+      ];
+
+      statsContent.innerHTML = stats.map(stat => `
+        <div class="stat-item">
+          <span class="stat-label">${stat.label}</span>
+          <span class="stat-value" ${stat.color ? `style="color: ${stat.color}; font-weight: bold;"` : ''}>${stat.value}</span>
+        </div>
+      `).join('');
+
+      // Add additional message if available
+      if (data.message) {
+        statsContent.innerHTML += `
+          <div class="stat-item" style="border-top: 2px solid #e9ecef; margin-top: 15px; padding-top: 15px;">
+            <span class="stat-label">Details</span>
+            <span class="stat-value" style="color: ${statusColor};">${data.message}</span>
+          </div>
+        `;
+      }
+    }
+
+    // Add keyboard shortcut
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter' && !isProcessing) {
+        solveMaze();
+      }
+    });
+
+    // Add tooltips for algorithm selection
+    const algorithmSelect = document.getElementById('algorithm');
+    const algorithmDescriptions = {
+      'astar': 'A* uses heuristics to find the optimal path quickly',
+      'bfs': 'BFS guarantees the shortest path by exploring level by level',
+      'dfs': 'DFS uses less memory but may not find the shortest path',
+      'dijkstra': 'Dijkstra finds optimal paths in weighted graphs',
+      'bidirectional': 'Bidirectional search explores from both start and end simultaneously'
+    };
+
+    algorithmSelect.addEventListener('change', function() {
+      const description = algorithmDescriptions[this.value];
+      this.title = description;
+    });
+
+    // Initialize tooltips
+    algorithmSelect.title = algorithmDescriptions[algorithmSelect.value];
+
+    // Initialize the interface
+    handleMazeTypeChange();
+  </script>
+</body>
+</html>

@@ -1,96 +1,116 @@
-import pygame
-import ast
-import time
+"""
+Enhanced DFS pathfinding algorithm with real-time animation.
+"""
 import sys
+import time
+from typing import List, Tuple, Optional, Dict, Set
+from algorithm_base import PathfindingAlgorithm
+from utils import get_neighbors
+from config import ALGORITHM_CONFIG
 
-# Constants
-CELL_SIZE = 20
-MARGIN = 1
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-GREEN = (0, 255, 0)
-RED = (255, 0, 0)
-BLUE = (0, 0, 255)
-GREY = (200, 200, 200)
+class DFSAlgorithm(PathfindingAlgorithm):
+    """Depth-First Search pathfinding algorithm."""
 
-# Load maze
-maze_file = sys.argv[1] if len(sys.argv) > 1 else "manual_maze.txt"
-maze = []
-with open(maze_file, "r") as f:
-    for line in f:
-        line = line.strip()
-        if line.startswith("[") and line.endswith("]"):
-            maze.append(ast.literal_eval(line))
+    def __init__(self, maze_file: str, animate: bool = True):
+        super().__init__(maze_file, animate)
+        self.stack = []
+
+    def solve(self) -> Tuple[Optional[List[Tuple[int, int]]], Dict]:
+        """
+        Solve maze using DFS algorithm.
+
+        Returns:
+            Tuple of (path, statistics)
+        """
+        # Initialize stack with start position
+        self.stack.append(self.start)
+
+        nodes_explored = 0
+        max_stack_size = 1
+
+        while self.stack:
+            current = self.stack.pop()
+
+            # Skip if already visited
+            if current in self.visited:
+                continue
+
+            # Mark as visited
+            self.visited.add(current)
+            nodes_explored += 1
+
+            # Check if we reached the goal
+            if current == self.end:
+                path = self.reconstruct_path()
+                return path, {
+                    'nodes_explored': nodes_explored,
+                    'max_stack_size': max_stack_size
+                }
+
+            # Update animation
+            if self.animate and nodes_explored % 2 == 0:  # Update every 2 nodes for performance
+                self.stats['nodes_explored'] = nodes_explored
+                self.draw_maze(current, set(self.stack))
+                time.sleep(ALGORITHM_CONFIG['ANIMATION_DELAY'])
+
+            # Explore neighbors (in reverse order for DFS)
+            neighbors = get_neighbors(current, self.rows, self.cols)
+            neighbors.reverse()  # DFS explores in reverse order
+
+            for neighbor in neighbors:
+                nr, nc = neighbor
+
+                # Skip walls and visited nodes
+                if self.maze[nr][nc] == 1 or neighbor in self.visited:
+                    continue
+
+                # Add to stack and record path
+                if neighbor not in self.came_from:
+                    self.stack.append(neighbor)
+                    self.came_from[neighbor] = current
+
+            # Track maximum stack size
+            max_stack_size = max(max_stack_size, len(self.stack))
+
+            # Timeout check
+            if time.time() - self.stats.get('start_time', time.time()) > ALGORITHM_CONFIG['TIMEOUT_SECONDS']:
+                break
+
+        # No path found
+        return None, {
+            'nodes_explored': nodes_explored,
+            'max_stack_size': max_stack_size,
+            'timeout': True
+        }
+
+def main():
+    """Main function to run DFS algorithm."""
+    maze_file = sys.argv[1] if len(sys.argv) > 1 else "manual_maze.txt"
+    animate = len(sys.argv) < 3 or sys.argv[2].lower() != 'false'
+
+    try:
+        algorithm = DFSAlgorithm(maze_file, animate)
+        path, stats = algorithm.run()
+
+        # Print results with clear success/failure indication
+        if path:
+            print(f"DFS Path found! Length: {len(path)}")
+            print(f"SUCCESS: Path successfully found using DFS algorithm")
         else:
-            maze.append(list(map(int, line.split())))
+            print("DFS No path found")
+            print("FAILURE: No path exists between start and end points")
 
-ROWS, COLS = len(maze), len(maze[0])
-start = end = None
-for r in range(ROWS):
-    for c in range(COLS):
-        if maze[r][c] == 2:
-            start = (r, c)
-        elif maze[r][c] == 3:
-            end = (r, c)
+        print(f"Nodes explored: {stats['nodes_explored']}")
+        print(f"Time taken: {stats['execution_time']:.3f} seconds")
+        print(f"Max stack size: {stats.get('max_stack_size', 0)}")
 
-if not start or not end:
-    raise ValueError("Start or End point not defined in the maze.")
+        if stats.get('timeout'):
+            print("Algorithm timed out")
+            print("FAILURE: Algorithm exceeded time limit")
 
-def dfs(maze, start, end):
-    start_time = time.time()
-    stack = [start]
-    came_from = {}
-    visited = set()
-    while stack:
-        current = stack.pop()
-        if current == end:
-            path = []
-            while current in came_from:
-                path.append(current)
-                current = came_from[current]
-            path.reverse()
-            return path, time.time() - start_time
-        visited.add(current)
-        for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
-            nr, nc = current[0] + dr, current[1] + dc
-            neighbor = (nr, nc)
-            if 0 <= nr < ROWS and 0 <= nc < COLS:
-                if maze[nr][nc] != 1 and neighbor not in visited:
-                    stack.append(neighbor)
-                    if neighbor not in came_from:
-                        came_from[neighbor] = current
-    return None, time.time() - start_time
+    except Exception as e:
+        print(f"Error running DFS algorithm: {e}")
+        sys.exit(1)
 
-path, time_taken = dfs(maze, start, end)
-
-pygame.init()
-surface = pygame.Surface(((CELL_SIZE + MARGIN) * COLS, (CELL_SIZE + MARGIN) * ROWS + 40))
-font = pygame.font.SysFont(None, 24)
-
-def draw_maze():
-    for r in range(ROWS):
-        for c in range(COLS):
-            pos = (r, c)
-            val = maze[r][c]
-            color = WHITE if val == 0 else BLACK
-            if val == 2:
-                color = GREEN
-            elif val == 3:
-                color = RED
-            if path and pos in path and pos != start and pos != end:
-                color = BLUE
-            rect = [(CELL_SIZE + MARGIN) * c + MARGIN,
-                    (CELL_SIZE + MARGIN) * r + MARGIN,
-                    CELL_SIZE, CELL_SIZE]
-            pygame.draw.rect(surface, color, rect)
-            pygame.draw.rect(surface, GREY, rect, 1)
-
-def draw_info():
-    label = font.render(f"Path Found: {'Yes' if path else 'No'} | Time: {time_taken:.4f} sec", True, (0, 0, 0))
-    surface.blit(label, (10, (CELL_SIZE + MARGIN) * ROWS + 5))
-
-surface.fill(GREY)
-draw_maze()
-draw_info()
-pygame.image.save(surface, "solution.png")
-pygame.quit()
+if __name__ == "__main__":
+    main()
