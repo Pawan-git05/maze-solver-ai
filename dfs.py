@@ -39,12 +39,15 @@ class DFSAlgorithm(PathfindingAlgorithm):
             self.visited.add(current)
             nodes_explored += 1
 
-            # Check if we reached the goal
-            if current == self.end:
+            # Check if we reached any goal
+            if current in self.ends:
+                # Update self.end to the reached end point for path reconstruction
+                self.end = current
                 path = self.reconstruct_path()
                 return path, {
                     'nodes_explored': nodes_explored,
-                    'max_stack_size': max_stack_size
+                    'max_stack_size': max_stack_size,
+                    'end_reached': current
                 }
 
             # Update animation
@@ -86,7 +89,12 @@ class DFSAlgorithm(PathfindingAlgorithm):
 def main():
     """Main function to run DFS algorithm."""
     maze_file = sys.argv[1] if len(sys.argv) > 1 else "manual_maze.txt"
-    animate = len(sys.argv) < 3 or sys.argv[2].lower() != 'false'
+
+    # Check for headless mode (no animation)
+    animate = True
+    if len(sys.argv) >= 3:
+        if sys.argv[2].lower() in ['false', 'headless', 'no-gui']:
+            animate = False
 
     try:
         algorithm = DFSAlgorithm(maze_file, animate)

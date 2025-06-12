@@ -21,15 +21,18 @@ class AStarAlgorithm(PathfindingAlgorithm):
 
     def heuristic(self, pos: Tuple[int, int]) -> float:
         """
-        Calculate heuristic distance (Manhattan distance) to end.
+        Calculate heuristic distance (Manhattan distance) to nearest end.
 
         Args:
             pos: Current position
 
         Returns:
-            Heuristic distance to end
+            Heuristic distance to nearest end
         """
-        return calculate_distance(pos, self.end)
+        # Return distance to nearest end point
+        if not self.ends:
+            return 0
+        return min(calculate_distance(pos, end) for end in self.ends)
 
     def solve(self) -> Tuple[Optional[List[Tuple[int, int]]], Dict]:
         """
@@ -54,13 +57,16 @@ class AStarAlgorithm(PathfindingAlgorithm):
             current_f, current = heapq.heappop(self.open_set)
             self.open_set_hash.remove(current)
 
-            # Check if we reached the goal
-            if current == self.end:
+            # Check if we reached any goal
+            if current in self.ends:
+                # Update self.end to the reached end point for path reconstruction
+                self.end = current
                 path = self.reconstruct_path()
                 return path, {
                     'nodes_explored': nodes_explored,
                     'max_frontier_size': max_frontier_size,
-                    'final_path_cost': self.g_score[current]
+                    'final_path_cost': self.g_score[current],
+                    'end_reached': current
                 }
 
             # Mark as visited
@@ -113,7 +119,12 @@ class AStarAlgorithm(PathfindingAlgorithm):
 def main():
     """Main function to run A* algorithm."""
     maze_file = sys.argv[1] if len(sys.argv) > 1 else "manual_maze.txt"
-    animate = len(sys.argv) < 3 or sys.argv[2].lower() != 'false'
+
+    # Check for headless mode (no animation)
+    animate = True
+    if len(sys.argv) >= 3:
+        if sys.argv[2].lower() in ['false', 'headless', 'no-gui']:
+            animate = False
 
     try:
         algorithm = AStarAlgorithm(maze_file, animate)

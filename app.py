@@ -6,8 +6,12 @@ import time
 import traceback
 from config import APP_CONFIG, setup_logging, validate_maze_size, get_algorithm_script, get_algorithm_info
 from utils import encode_image_to_base64, cleanup_temp_files, MazeError, AlgorithmError
+from web_maze_generator import generate_web_mazes
 
-# Setup logging
+# Suppress pygame welcome message before any pygame imports
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
+
+# Setup logging with reduced verbosity
 logger = setup_logging()
 
 app = Flask(__name__)
@@ -31,6 +35,52 @@ def get_algorithms():
         logger.error(f"Error getting algorithm info: {e}")
         return jsonify({"error": "Failed to get algorithm information"}), 500
 
+@app.route('/generate-random-mazes', methods=['POST'])
+def generate_random_mazes():
+    """Generate multiple random mazes for web interface selection."""
+    print("🔥 /generate-random-mazes endpoint called!")
+    try:
+        # Validate request
+        if not request.json:
+            print("❌ No JSON data in request")
+            return jsonify({"error": "No JSON data provided"}), 400
+
+        data = request.json
+        print(f"📋 Received data: {data}")
+
+        size = validate_maze_size(data.get('size', 25))
+        count = min(max(data.get('count', 5), 1), 10)  # Limit between 1 and 10
+
+        print(f"🎲 Generating {count} random mazes of size {size}x{size}")
+
+        # Generate mazes using web generator
+        mazes = generate_web_mazes(size, count)
+
+        if not mazes:
+            print("❌ Failed to generate mazes - empty result")
+            return jsonify({"error": "Failed to generate mazes"}), 500
+
+        print(f"✅ Successfully generated {len(mazes)} mazes")
+        print(f"📊 First maze sample: {mazes[0][:2] if mazes else 'None'}")
+
+        response_data = {
+            "success": True,
+            "mazes": mazes,
+            "count": len(mazes),
+            "size": size
+        }
+        print(f"📤 Sending response with {len(mazes)} mazes")
+        return jsonify(response_data)
+
+    except Exception as e:
+        print(f"❌ ERROR in generate_random_mazes: {e}")
+        print(f"❌ Error type: {type(e)}")
+        import traceback
+        print(f"❌ Traceback: {traceback.format_exc()}")
+        logger.error(f"Error generating random mazes: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({"error": f"Failed to generate random mazes: {str(e)}"}), 500
+
 @app.route('/solve', methods=['POST'])
 def solve_maze():
     """
@@ -45,15 +95,16 @@ def solve_maze():
 
         data = request.json
         maze_type = data.get('maze_type', 'random')
-        size = validate_maze_size(data.get('size', 25))
+        original_size = data.get('size', 25)
+        size = validate_maze_size(original_size)
         algorithm = data.get('algorithm', 'bfs').lower()
         custom_maze = data.get('maze_grid', None)
 
-        logger.info(f"Solving maze: type={maze_type}, size={size}, algorithm={algorithm}")
+        print(f"Solving maze: type={maze_type}, size={size}, algorithm={algorithm}")
 
         # Validate inputs
-        if maze_type not in ['random', 'custom']:
-            return jsonify({"error": "Invalid maze type. Must be 'random' or 'custom'"}), 400
+        if maze_type not in ['random', 'custom', 'random_selected']:
+            return jsonify({"error": "Invalid maze type. Must be 'random', 'custom', or 'random_selected'"}), 400
 
         algo_script = get_algorithm_script(algorithm)
         if not algo_script:
@@ -63,15 +114,20 @@ def solve_maze():
         cleanup_temp_files()
 
         # Handle different maze types
-        if maze_type == 'custom':
-            # Handle custom maze from web editor
-            logger.info(f"Processing custom maze: size={size}, has_maze_data={custom_maze is not None}")
-            if not custom_maze:
-                return jsonify({"error": "Custom maze data is required"}), 400
+        if maze_type in ['custom', 'random_selected']:
+            # Handle custom maze from web editor or selected random maze
+            maze_type_name = "custom maze" if maze_type == 'custom' else "selected random maze"
+            logger.info(f"Processing {maze_type_name}: size={size}, has_maze_data={custom_maze is not None}")
 
-            # Validate custom maze
-            if len(custom_maze) != size or any(len(row) != size for row in custom_maze):
-                return jsonify({"error": f"Custom maze must be {size}x{size}"}), 400
+            if not custom_maze:
+                return jsonify({"error": f"Maze data is required for {maze_type_name}"}), 400
+
+            # Validate maze dimensions match the original requested size
+            if len(custom_maze) != original_size or any(len(row) != original_size for row in custom_maze):
+                return jsonify({"error": f"Maze must be {original_size}x{original_size}"}), 400
+
+            # Update size to match the actual maze size (no validation adjustment for custom mazes)
+            size = original_size
 
             # Check for start and end points
             start_count = sum(row.count(2) for row in custom_maze)
@@ -79,31 +135,31 @@ def solve_maze():
 
             if start_count != 1:
                 return jsonify({"error": "Maze must have exactly one start point (green)"}), 400
-            if end_count != 1:
-                return jsonify({"error": "Maze must have exactly one end point (red)"}), 400
+            if end_count < 1:
+                return jsonify({"error": "Maze must have at least one end point (red)"}), 400
 
-            # Save custom maze to file
-            maze_file = "custom_maze.txt"
+            # Save maze to file
+            maze_file = "selected_maze.txt" if maze_type == 'random_selected' else "custom_maze.txt"
             try:
                 with open(maze_file, 'w') as f:
                     for row in custom_maze:
                         f.write(str(row) + '\n')
-                logger.info(f"Custom maze saved to {maze_file}")
+                logger.info(f"Maze saved to {maze_file}")
 
                 # Also generate the initial maze image
                 from utils import save_maze_image, load_maze_from_file
                 maze_data = load_maze_from_file(maze_file)
                 save_maze_image(maze_data, "maze.png")
-                logger.info("Custom maze image generated")
+                logger.info("Maze image generated")
 
             except Exception as e:
-                logger.error(f"Failed to save custom maze: {e}")
-                return jsonify({"error": "Failed to save custom maze"}), 500
+                logger.error(f"Failed to save maze: {e}")
+                return jsonify({"error": "Failed to save maze"}), 500
 
         else:
-            # Handle random maze generation only
+            # Handle random maze generation with GUI (legacy)
             if maze_type != 'random':
-                return jsonify({"error": "Only 'random' and 'custom' maze types are supported"}), 400
+                return jsonify({"error": "Only 'random', 'custom', and 'random_selected' maze types are supported"}), 400
 
             maze_script = "random_maze.py"
             maze_file = "random_maze.txt"
@@ -142,8 +198,9 @@ def solve_maze():
         # Step 2: Solve the maze
         logger.info(f"Solving maze with {algorithm} algorithm")
         try:
+            # Run algorithm in headless mode (no GUI)
             result = subprocess.run(
-                [sys.executable, algo_script, maze_file],
+                [sys.executable, algo_script, maze_file, "headless"],
                 check=True,
                 capture_output=True,
                 text=True,
@@ -256,7 +313,8 @@ def internal_error(error):
     return jsonify({"error": "Internal server error"}), 500
 
 if __name__ == '__main__':
-    logger.info("Starting Maze Solver AI Flask application")
+    print("🚀 Starting Maze Solver AI Flask application")
+    print(f"🌐 Server running at http://{APP_CONFIG['HOST']}:{APP_CONFIG['PORT']}")
     app.run(
         host=APP_CONFIG['HOST'],
         port=APP_CONFIG['PORT'],

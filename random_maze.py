@@ -48,7 +48,7 @@ grid = np.ones((ROWS, COLS), dtype=int)
 start_set = False
 goal_set = False
 start_pos = (-1, -1)
-goal_pos = (-1, -1)
+goal_pos = []  # Changed to list for multiple end points
 
 maze_history = []
 current_maze_index = -1
@@ -64,7 +64,8 @@ def generate_random_maze():
     grid[ROWS - 1][COLS - 1] = 0
     carve_path()
     start_set = goal_set = False
-    start_pos = goal_pos = (-1, -1)
+    start_pos = (-1, -1)
+    goal_pos = []
     maze_history.append(grid.copy())
     global current_maze_index
     current_maze_index = len(maze_history) - 1
@@ -118,8 +119,8 @@ def draw_grid():
     pygame.display.flip()
 
 def save_maze():
-    if not start_set or not goal_set:
-        print("ERROR: Please set both start and goal nodes before saving!")
+    if not start_set or not goal_pos:
+        print("ERROR: Please set start and at least one goal node before saving!")
         print("FAILURE: Maze generation incomplete - missing start or end point")
         pygame.quit()
         sys.exit(1)  # Exit with error code
@@ -153,7 +154,8 @@ def load_previous_maze():
         current_maze_index -= 1
         grid = maze_history[current_maze_index].copy()
         start_set = goal_set = False
-        start_pos = goal_pos = (-1, -1)
+        start_pos = (-1, -1)
+        goal_pos = []
         for row in range(ROWS):
             for col in range(COLS):
                 if grid[row][col] == 2:
@@ -161,7 +163,7 @@ def load_previous_maze():
                     start_pos = (row, col)
                 elif grid[row][col] == 3:
                     goal_set = True
-                    goal_pos = (row, col)
+                    goal_pos.append((row, col))
 
 generate_random_maze()
 running = True
@@ -184,17 +186,18 @@ while running:
                             grid[row][col] = 0
                             start_pos = (-1, -1)
                             start_set = False
-                        elif (row, col) == goal_pos:
+                        elif (row, col) in goal_pos:
                             grid[row][col] = 0
-                            goal_pos = (-1, -1)
-                            goal_set = False
+                            goal_pos.remove((row, col))
+                            if not goal_pos:
+                                goal_set = False
                         elif not start_set:
                             grid[row][col] = 2
                             start_pos = (row, col)
                             start_set = True
-                        elif not goal_set and (row, col) != start_pos:
+                        elif (row, col) != start_pos:
                             grid[row][col] = 3
-                            goal_pos = (row, col)
+                            goal_pos.append((row, col))
                             goal_set = True
             else:
                 button_y = GRID_TOP_OFFSET + ROWS * (CELL_SIZE + MARGIN) + 10

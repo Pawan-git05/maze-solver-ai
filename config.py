@@ -15,7 +15,7 @@ APP_CONFIG = {
 
 # Maze settings
 MAZE_CONFIG = {
-    'MIN_SIZE': 8,
+    'MIN_SIZE': 3,  # Allow smaller mazes for testing
     'MAX_SIZE': 50,
     'DEFAULT_SIZE': 25,
     'CELL_SIZE': 20,
@@ -53,16 +53,24 @@ PATHS = {
     'LOG_FILE': 'maze_solver.log'
 }
 
-def setup_logging(level=logging.INFO):
-    """Setup logging configuration."""
+def setup_logging(level=logging.WARNING):
+    """Setup logging configuration with reduced verbosity."""
+    # Suppress pygame welcome message
+    os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
+
+    # Configure logging with less verbose output
     logging.basicConfig(
         level=level,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        format='%(levelname)s - %(message)s',
         handlers=[
             logging.FileHandler(PATHS['LOG_FILE']),
             logging.StreamHandler()
         ]
     )
+
+    # Reduce werkzeug (Flask) logging verbosity
+    logging.getLogger('werkzeug').setLevel(logging.ERROR)
+
     return logging.getLogger(__name__)
 
 def validate_maze_size(size: int) -> int:

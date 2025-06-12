@@ -271,6 +271,117 @@
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     }
 
+    /* Random Maze Selector Styles */
+    .random-maze-selector {
+      display: none;
+      background: white;
+      border-radius: 15px;
+      padding: 30px;
+      margin: 20px 0;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .random-maze-selector h3 {
+      color: #495057;
+      margin-bottom: 20px;
+      text-align: center;
+      font-size: 1.4rem;
+    }
+
+    .maze-preview-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 20px 0;
+      gap: 20px;
+    }
+
+    .maze-navigation {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .nav-btn {
+      padding: 12px 16px;
+      border: 2px solid #dee2e6;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 500;
+      font-size: 18px;
+      min-width: 50px;
+      text-align: center;
+    }
+
+    .nav-btn:hover:not(:disabled) {
+      border-color: #4facfe;
+      background: #f8f9fa;
+      transform: translateY(-1px);
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .maze-preview {
+      border: 2px solid #dee2e6;
+      border-radius: 8px;
+      background: white;
+      position: relative;
+    }
+
+    .maze-info {
+      text-align: center;
+      margin: 15px 0;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .maze-counter {
+      font-weight: 600;
+      color: #495057;
+      font-size: 1.1rem;
+    }
+
+    .point-selection-mode {
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    .point-mode-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin: 15px 0;
+      flex-wrap: wrap;
+    }
+
+    .point-btn {
+      padding: 10px 20px;
+      border: 2px solid #dee2e6;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+
+    .point-btn.active {
+      background: #4facfe;
+      color: white;
+      border-color: #4facfe;
+    }
+
+    .point-btn:hover {
+      border-color: #4facfe;
+      transform: translateY(-1px);
+    }
+
     .maze-editor h3 {
       color: #495057;
       margin-bottom: 20px;
@@ -534,6 +645,93 @@
       </div>
     </div>
 
+    <!-- Random Maze Selector Section -->
+    <div class="random-maze-selector" id="randomMazeSelector">
+      <h3>🎲 Random Maze Selection</h3>
+      <p style="text-align: center; color: #6c757d; margin-bottom: 20px;">
+        Browse through randomly generated mazes and select one start and one end point.
+      </p>
+
+      <div class="maze-preview-container">
+        <div class="maze-navigation">
+          <button class="nav-btn" id="prevMazeBtn" onclick="previousMaze()" title="Previous Maze">
+            ⬅️
+          </button>
+        </div>
+
+        <div class="maze-preview">
+          <canvas id="randomMazeCanvas" class="maze-canvas" width="400" height="400" style="border: 2px solid #000; background: white; display: block !important; visibility: visible !important;"></canvas>
+        </div>
+
+        <div class="maze-navigation">
+          <button class="nav-btn" id="nextMazeBtn" onclick="nextMaze()" title="Next Maze">
+            ➡️
+          </button>
+        </div>
+      </div>
+
+      <div class="maze-info">
+        <div class="maze-counter" id="mazeCounter">
+          Maze 1 of 5
+        </div>
+        <div style="margin-top: 8px; color: #6c757d; font-size: 14px;">
+          Click Previous/Next to browse mazes
+        </div>
+      </div>
+
+      <div class="point-selection-mode">
+        <h4 style="color: #495057; margin-bottom: 15px;">Set Start & End Points</h4>
+        <div class="point-mode-buttons">
+          <button class="point-btn active" data-mode="start" onclick="setRandomMazeMode('start')">
+            🟢 Set Start
+          </button>
+          <button class="point-btn" data-mode="end" onclick="setRandomMazeMode('end')">
+            🔴 Set End
+          </button>
+        </div>
+        <div style="margin-top: 10px; color: #6c757d; font-size: 14px;">
+          Click on the maze to place one start (green) and one end (red) point
+        </div>
+      </div>
+
+      <div class="maze-legend">
+        <div class="legend-item">
+          <div class="legend-color" style="background: #000;"></div>
+          <span>Wall (impassable)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #fff; border: 2px solid #ddd;"></div>
+          <span>Path (walkable)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #28a745;"></div>
+          <span>Start point</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #dc3545;"></div>
+          <span>End point</span>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin: 15px 0; padding: 10px; background: #e3f2fd; border-radius: 8px;">
+        <span id="randomMazeStatus" style="font-weight: 500; color: #1976d2;">
+          Status: Select one start and one end point
+        </span>
+      </div>
+
+      <div class="editor-actions">
+        <button class="btn-secondary" onclick="hideRandomMazeSelector()">
+          ❌ Cancel
+        </button>
+        <button class="btn-primary" onclick="generateMoreMazes()">
+          🎲 Generate More
+        </button>
+        <button class="btn-success" onclick="solveSelectedMaze()" id="solveRandomBtn" disabled>
+          ✅ Solve This Maze
+        </button>
+      </div>
+    </div>
+
     <div class="loading" id="loading">
       <div class="spinner"></div>
       <p>Generating and solving maze... This may take a few moments.</p>
@@ -577,7 +775,14 @@
     let editMode = 'wall';
     let isDrawing = false;
     let startPos = null;
-    let endPos = null;
+    let endPos = null; // Single end point only
+
+    // Random Maze Selector Variables
+    let randomMazes = [];
+    let currentMazeIndex = 0;
+    let randomMazeMode = 'start';
+    let randomStartPos = null;
+    let randomEndPos = null; // Single end point only
 
     // Handle maze type change
     function handleMazeTypeChange() {
@@ -587,7 +792,7 @@
       if (mazeType === 'custom') {
         solveBtn.textContent = '🎨 Design Maze';
       } else {
-        solveBtn.textContent = '🚀 Solve Maze';
+        solveBtn.textContent = '🎲 Select Random Maze';
       }
     }
 
@@ -598,7 +803,7 @@
       if (mazeType === 'custom') {
         showMazeEditor();
       } else {
-        solveMaze();
+        showRandomMazeSelector();
       }
     }
 
@@ -726,7 +931,7 @@
             startPos = { row, col };
             break;
           case 'end':
-            // Remove previous end
+            // Remove previous end point
             if (endPos) {
               mazeGrid[endPos.row][endPos.col] = 0;
             }
@@ -803,7 +1008,7 @@
       let canSolve = false;
 
       if (!startPos && !endPos) {
-        status = 'Status: Set start (green) and end (red) points';
+        status = 'Status: Set start (green) and end (red) point';
       } else if (!startPos) {
         status = 'Status: Set start point (green)';
       } else if (!endPos) {
@@ -834,13 +1039,18 @@
 
     function validateAndPreview() {
       if (!startPos || !endPos) {
-        alert('Please set both start (green) and end (red) points first!');
+        alert('Please set start (green) and end (red) point first!');
         return;
       }
 
-      // Simple path validation - check if start and end are not walls
-      if (mazeGrid[startPos.row][startPos.col] !== 2 || mazeGrid[endPos.row][endPos.col] !== 3) {
-        alert('Start or end points are invalid!');
+      // Simple path validation - check if start and end points are not walls
+      if (mazeGrid[startPos.row][startPos.col] !== 2) {
+        alert('Start point is invalid!');
+        return;
+      }
+
+      if (mazeGrid[endPos.row][endPos.col] !== 3) {
+        alert('End point is invalid!');
         return;
       }
 
@@ -850,7 +1060,7 @@
     async function saveMazeAndSolve() {
       // Validate maze has start and end
       if (!startPos || !endPos) {
-        alert('Please set both start (green) and end (red) points before solving!');
+        alert('Please set start (green) and end (red) point before solving!');
         return;
       }
 
@@ -874,6 +1084,362 @@
       console.log('📡 Sending maze data:', mazeData);
 
       // Solve the custom maze
+      await solveMazeWithData(mazeData);
+    }
+
+    // Random Maze Selector Functions
+    async function showRandomMazeSelector() {
+      const selector = document.getElementById('randomMazeSelector');
+      selector.style.display = 'block';
+
+      // Test canvas immediately
+      const canvas = document.getElementById('randomMazeCanvas');
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(0, 0, 50, 50);
+        ctx.fillStyle = '#000000';
+        ctx.fillText('TEST', 10, 30);
+      }
+
+      // Generate initial set of random mazes
+      await generateRandomMazes();
+
+      // Scroll to selector
+      selector.scrollIntoView({
+        behavior: 'smooth'
+      });
+    }
+
+    function hideRandomMazeSelector() {
+      document.getElementById('randomMazeSelector').style.display = 'none';
+    }
+
+    async function generateRandomMazes() {
+      try {
+        const size = parseInt(document.getElementById('size').value);
+
+        console.log('🎲 Generating random mazes...');
+        console.log('📡 Request data:', { size: size, count: 5 });
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+        const response = await fetch('/generate-random-mazes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ size: size, count: 5 }),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+        console.log('📥 Response received:', response.status, response.statusText);
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Received maze data:', data);
+
+          if (data.mazes && Array.isArray(data.mazes) && data.mazes.length > 0) {
+            randomMazes = data.mazes;
+            currentMazeIndex = 0;
+            console.log('📋 Set randomMazes:', randomMazes.length, 'mazes');
+
+            // Reset positions for new mazes
+            randomStartPos = null;
+            randomEndPos = null;
+
+            // Initialize the first maze display
+            console.log('🎨 About to call displayCurrentRandomMaze...');
+            displayCurrentRandomMaze();
+            updateRandomMazeControls();
+            updateRandomMazeStatus();
+            console.log('✅ Maze display initialization complete');
+          } else {
+            console.error('❌ Invalid maze data:', data);
+            throw new Error('Invalid maze data received from server');
+          }
+        } else {
+          const errorData = await response.json();
+          console.error('❌ Server error:', errorData);
+          throw new Error(errorData.error || 'Failed to generate random mazes');
+        }
+      } catch (error) {
+        console.error('❌ Error generating random mazes:', error);
+
+        if (error.name === 'AbortError') {
+          console.error('❌ Request timed out');
+          alert('Request timed out. Please try again.');
+        } else {
+          console.error('❌ Network or server error:', error.message);
+          alert(`Failed to generate random mazes: ${error.message}`);
+        }
+
+        // Draw a simple test pattern to show the canvas works
+        const canvas = document.getElementById('randomMazeCanvas');
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ff0000';
+          ctx.fillRect(0, 0, 200, 200);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '16px Arial';
+          ctx.fillText('Error loading maze', 10, 30);
+          ctx.fillText('Canvas is working', 10, 50);
+        }
+      }
+    }
+
+    function displayCurrentRandomMaze() {
+      console.log('🎨 displayCurrentRandomMaze called');
+      console.log('📊 randomMazes.length:', randomMazes.length);
+      console.log('📍 currentMazeIndex:', currentMazeIndex);
+
+      if (randomMazes.length === 0) {
+        console.log('❌ No random mazes available');
+        return;
+      }
+
+      const canvas = document.getElementById('randomMazeCanvas');
+      if (!canvas) {
+        console.error('❌ Random maze canvas not found');
+        return;
+      }
+      console.log('✅ Canvas found:', canvas);
+
+      // Force canvas to be visible
+      canvas.style.display = 'block';
+      canvas.style.visibility = 'visible';
+      console.log('👁️ Canvas visibility forced');
+
+      const ctx = canvas.getContext('2d');
+      const maze = randomMazes[currentMazeIndex];
+      console.log('🧩 Current maze:', maze);
+
+      if (!maze || !Array.isArray(maze)) {
+        console.error('❌ Invalid maze data:', maze);
+        // Draw a test pattern to show canvas is working
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(0, 0, 100, 100);
+        ctx.fillStyle = '#000000';
+        ctx.fillText('No maze data', 10, 50);
+        console.log('🔴 Drew error pattern');
+        return;
+      }
+      console.log('✅ Maze data is valid, size:', maze.length);
+
+      mazeSize = maze.length;
+      const maxCanvasSize = 400;
+      cellSize = Math.floor(maxCanvasSize / mazeSize);
+
+      // Ensure minimum cell size
+      if (cellSize < 8) {
+        cellSize = 8;
+      }
+
+      canvas.width = mazeSize * cellSize;
+      canvas.height = mazeSize * cellSize;
+
+      // Ensure canvas has minimum dimensions
+      if (canvas.width < 100) canvas.width = 100;
+      if (canvas.height < 100) canvas.height = 100;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Fill background with white to ensure visibility
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw a border to make sure canvas is visible
+      ctx.strokeStyle = '#ff0000';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+      // Draw maze cells
+      for (let i = 0; i < mazeSize; i++) {
+        for (let j = 0; j < mazeSize; j++) {
+          const x = j * cellSize;
+          const y = i * cellSize;
+
+          let color = '#000'; // Wall (black)
+          if (maze[i][j] === 0) color = '#fff'; // Path (white)
+          if (maze[i][j] === 2) color = '#28a745'; // Start (green)
+          if (maze[i][j] === 3) color = '#dc3545'; // End (red)
+
+          ctx.fillStyle = color;
+          ctx.fillRect(x, y, cellSize, cellSize);
+
+          // Draw grid lines for better visibility
+          ctx.strokeStyle = '#ddd';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x, y, cellSize, cellSize);
+        }
+      }
+
+      setupRandomMazeCanvasEvents();
+    }
+
+    function setupRandomMazeCanvasEvents() {
+      const canvas = document.getElementById('randomMazeCanvas');
+
+      // Remove existing event listeners without replacing the canvas
+      canvas.onclick = null;
+
+      canvas.addEventListener('click', (e) => {
+        handleRandomMazeClick(e);
+      });
+    }
+
+    function handleRandomMazeClick(e) {
+      const canvas = document.getElementById('randomMazeCanvas');
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const col = Math.floor(x / cellSize);
+      const row = Math.floor(y / cellSize);
+
+      if (row >= 0 && row < mazeSize && col >= 0 && col < mazeSize) {
+        const maze = randomMazes[currentMazeIndex];
+
+        // Only allow placing on paths (not walls)
+        if (maze[row][col] === 1) {
+          return;
+        }
+
+        if (randomMazeMode === 'start') {
+          // Remove previous start
+          if (randomStartPos) {
+            maze[randomStartPos.row][randomStartPos.col] = 0;
+          }
+          maze[row][col] = 2;
+          randomStartPos = { row, col };
+        } else if (randomMazeMode === 'end') {
+          // Remove previous end point
+          if (randomEndPos) {
+            maze[randomEndPos.row][randomEndPos.col] = 0;
+          }
+          maze[row][col] = 3;
+          randomEndPos = { row, col };
+        }
+
+        displayCurrentRandomMaze();
+        updateRandomMazeStatus();
+      }
+    }
+
+    function setRandomMazeMode(mode) {
+      randomMazeMode = mode;
+
+      // Update button states - only target point-btn buttons in random maze selector
+      document.querySelectorAll('.point-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+
+      // Use more specific selector to target only point-btn buttons
+      const targetBtn = document.querySelector(`.point-btn[data-mode="${mode}"]`);
+      if (targetBtn) {
+        targetBtn.classList.add('active');
+      }
+    }
+
+    function previousMaze() {
+      if (currentMazeIndex > 0) {
+        // Save current start/end positions
+        saveCurrentMazePositions();
+
+        currentMazeIndex--;
+        loadMazePositions();
+        displayCurrentRandomMaze();
+        updateRandomMazeControls();
+        updateRandomMazeStatus();
+      }
+    }
+
+    function nextMaze() {
+      if (currentMazeIndex < randomMazes.length - 1) {
+        // Save current start/end positions
+        saveCurrentMazePositions();
+
+        currentMazeIndex++;
+        loadMazePositions();
+        displayCurrentRandomMaze();
+        updateRandomMazeControls();
+        updateRandomMazeStatus();
+      }
+    }
+
+    function saveCurrentMazePositions() {
+      if (!randomMazes[currentMazeIndex].positions) {
+        randomMazes[currentMazeIndex].positions = {};
+      }
+      randomMazes[currentMazeIndex].positions.start = randomStartPos;
+      randomMazes[currentMazeIndex].positions.end = randomEndPos;
+    }
+
+    function loadMazePositions() {
+      const positions = randomMazes[currentMazeIndex].positions;
+      if (positions) {
+        randomStartPos = positions.start;
+        randomEndPos = positions.end || null;
+      } else {
+        randomStartPos = null;
+        randomEndPos = null;
+      }
+    }
+
+    function updateRandomMazeControls() {
+      document.getElementById('prevMazeBtn').disabled = currentMazeIndex === 0;
+      document.getElementById('nextMazeBtn').disabled = currentMazeIndex === randomMazes.length - 1;
+      document.getElementById('mazeCounter').textContent = `Maze ${currentMazeIndex + 1} of ${randomMazes.length}`;
+    }
+
+    function updateRandomMazeStatus() {
+      const statusEl = document.getElementById('randomMazeStatus');
+      const solveBtn = document.getElementById('solveRandomBtn');
+
+      let status = '';
+      let canSolve = false;
+
+      if (!randomStartPos && !randomEndPos) {
+        status = 'Status: Set start (green) and end (red) point';
+      } else if (!randomStartPos) {
+        status = 'Status: Set start point (green)';
+      } else if (!randomEndPos) {
+        status = 'Status: Set end point (red)';
+      } else {
+        status = 'Status: Ready to solve! ✅';
+        canSolve = true;
+      }
+
+      statusEl.textContent = status;
+      statusEl.style.color = canSolve ? '#28a745' : '#1976d2';
+      solveBtn.disabled = !canSolve;
+    }
+
+    async function generateMoreMazes() {
+      await generateRandomMazes();
+    }
+
+    async function solveSelectedMaze() {
+      if (!randomStartPos || !randomEndPos) {
+        alert('Please set start (green) and end (red) point before solving!');
+        return;
+      }
+
+      // Save current positions
+      saveCurrentMazePositions();
+
+      // Hide selector
+      hideRandomMazeSelector();
+
+      // Prepare maze data
+      const mazeData = {
+        maze_type: 'random_selected',
+        size: mazeSize,
+        algorithm: document.getElementById('algorithm').value,
+        maze_grid: randomMazes[currentMazeIndex]
+      };
+
+      // Solve the selected maze
       await solveMazeWithData(mazeData);
     }
 

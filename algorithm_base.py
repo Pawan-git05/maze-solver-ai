@@ -1,6 +1,7 @@
 """
 Base class for pathfinding algorithms with animation support.
 """
+import os
 import pygame
 import time
 import sys
@@ -18,21 +19,21 @@ class PathfindingAlgorithm(ABC):
     def __init__(self, maze_file: str, animate: bool = True):
         """
         Initialize the pathfinding algorithm.
-        
+
         Args:
             maze_file: Path to the maze file
             animate: Whether to show real-time animation
         """
         self.maze_file = maze_file
         self.animate = animate
-        self.maze = load_maze_from_file(maze_file)
-        self.rows = len(self.maze)
-        self.cols = len(self.maze[0])
-        
-        # Validate maze
-        validate_maze_positions(self.maze)
-        self.start, self.end = find_start_end_positions(self.maze)
-        
+
+        # Initialize maze-related attributes
+        self.maze = None
+        self.rows = 0
+        self.cols = 0
+        self.start = None
+        self.end = None
+
         # Algorithm state
         self.visited = set()
         self.path = []
@@ -43,7 +44,23 @@ class PathfindingAlgorithm(ABC):
             'execution_time': 0,
             'success': False
         }
-        
+
+        # Load maze if file exists (for actual execution)
+        if maze_file and os.path.exists(maze_file):
+            self.load_maze()
+
+    def load_maze(self):
+        """Load and validate the maze from file."""
+        self.maze = load_maze_from_file(self.maze_file)
+        self.rows = len(self.maze)
+        self.cols = len(self.maze[0])
+
+        # Validate maze
+        validate_maze_positions(self.maze)
+        self.start, self.ends = find_start_end_positions(self.maze)
+        # For backward compatibility, set self.end to the first end point
+        self.end = self.ends[0] if self.ends else None
+
         # Animation setup
         if self.animate:
             self.setup_animation()
@@ -185,6 +202,10 @@ class PathfindingAlgorithm(ABC):
         start_time = time.time()
 
         try:
+            # Ensure maze is loaded
+            if self.maze is None:
+                self.load_maze()
+
             # Solve the maze
             path, stats = self.solve()
 

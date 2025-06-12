@@ -81,7 +81,7 @@ class BidirectionalAlgorithm(PathfindingAlgorithm):
         # Draw final path if found
         if self.path:
             for pos in self.path:
-                if pos not in [self.start, self.end]:
+                if pos != self.start and pos not in self.ends:
                     row, col = pos
                     rect = [
                         (self.margin + self.cell_size) * col + self.margin,
@@ -139,12 +139,15 @@ class BidirectionalAlgorithm(PathfindingAlgorithm):
         """
         # Initialize both searches
         self.forward_queue.append(self.start)
-        self.backward_queue.append(self.end)
         self.forward_visited.add(self.start)
-        self.backward_visited.add(self.end)
+
+        # Initialize backward search from all end points
+        for end_point in self.ends:
+            self.backward_queue.append(end_point)
+            self.backward_visited.add(end_point)
         
         nodes_explored = 0
-        max_queue_size = 2
+        max_queue_size = 1 + len(self.ends)
         
         while self.forward_queue and self.backward_queue:
             # Alternate between forward and backward search
@@ -238,7 +241,12 @@ class BidirectionalAlgorithm(PathfindingAlgorithm):
 def main():
     """Main function to run Bidirectional Search algorithm."""
     maze_file = sys.argv[1] if len(sys.argv) > 1 else "manual_maze.txt"
-    animate = len(sys.argv) < 3 or sys.argv[2].lower() != 'false'
+
+    # Check for headless mode (no animation)
+    animate = True
+    if len(sys.argv) >= 3:
+        if sys.argv[2].lower() in ['false', 'headless', 'no-gui']:
+            animate = False
     
     try:
         algorithm = BidirectionalAlgorithm(maze_file, animate)

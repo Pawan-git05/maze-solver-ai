@@ -76,46 +76,47 @@ def load_maze_from_file(filename: str) -> List[List[int]]:
             raise
         raise MazeError(f"Error loading maze from {filename}: {e}")
 
-def find_start_end_positions(maze: List[List[int]]) -> Tuple[Optional[Tuple[int, int]], Optional[Tuple[int, int]]]:
+def find_start_end_positions(maze: List[List[int]]) -> Tuple[Optional[Tuple[int, int]], List[Tuple[int, int]]]:
     """
     Find start (2) and end (3) positions in the maze.
-    
+
     Args:
         maze: 2D list representing the maze
-        
+
     Returns:
-        Tuple of (start_position, end_position) or (None, None) if not found
+        Tuple of (start_position, list_of_end_positions)
     """
-    start = end = None
+    start = None
+    ends = []
     rows, cols = len(maze), len(maze[0])
-    
+
     for r in range(rows):
         for c in range(cols):
             if maze[r][c] == 2:
                 start = (r, c)
             elif maze[r][c] == 3:
-                end = (r, c)
-                
-    return start, end
+                ends.append((r, c))
+
+    return start, ends
 
 def validate_maze_positions(maze: List[List[int]]) -> None:
     """
     Validate that maze has proper start and end positions.
-    
+
     Args:
         maze: 2D list representing the maze
-        
+
     Raises:
         MazeError: If start or end positions are missing or invalid
     """
-    start, end = find_start_end_positions(maze)
-    
+    start, ends = find_start_end_positions(maze)
+
     if start is None:
         raise MazeError("Start position (2) not found in maze")
-    if end is None:
-        raise MazeError("End position (3) not found in maze")
-        
-    logger.info(f"Maze validation passed: start={start}, end={end}")
+    if len(ends) == 0:
+        raise MazeError("At least one end position (3) must be present in maze")
+
+    logger.info(f"Maze validation passed: start={start}, ends={ends}")
 
 def encode_image_to_base64(image_path: str) -> str:
     """
