@@ -7,7 +7,6 @@ A comprehensive Python project that generates mazes and solves them using variou
 - **Multiple Maze Types**: Generate random mazes or draw custom mazes manually
 - **AI Algorithms**: A*, BFS, DFS, and Dijkstra pathfinding algorithms
 - **Web Interface**: Modern Flask-based web application
-- **Desktop GUI**: Tkinter-based desktop application
 - **Visual Solutions**: See both the original maze and the solved path
 - **Performance Metrics**: Track solving time and algorithm performance
 - **Robust Error Handling**: Comprehensive logging and error management
