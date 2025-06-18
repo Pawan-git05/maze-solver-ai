@@ -92,13 +92,22 @@ def get_algorithm_script(algorithm: str) -> str:
         'bfs': 'bfs.py',
         'dfs': 'dfs.py',
         'dijkstra': 'dijkstra.py',
-        'bidirectional': 'bidirectional.py'
+        'bidirectional': 'bidirectional.py',
+        'reinforcement': 'rl_solver.py',
+        'rl': 'rl_solver.py'
     }
     return algorithm_map.get(algorithm.lower())
 
 def get_algorithm_info() -> Dict[str, Dict[str, str]]:
     """Get information about available algorithms."""
     return {
+        'reinforcement': {
+            'name': 'Reinforcement Learning (Q-Learning)',
+            'description': 'AI agent learns optimal path through trial and error',
+            'complexity': 'O(episodes × max_steps)',
+            'optimal': False,
+            'complete': True
+        },
         'astar': {
             'name': 'A* (A-Star)',
             'description': 'Optimal pathfinding using heuristics for fast performance',

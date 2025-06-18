@@ -20,68 +20,76 @@ class WebMazeGenerator:
     def __init__(self, size: int = 25):
         """
         Initialize maze generator.
-        
+
         Args:
             size: Size of the maze (size x size)
         """
         self.size = max(8, min(30, size))  # Clamp size between 8 and 30
         
-    def generate_single_maze(self) -> List[List[int]]:
+    def generate_single_maze(self, should_be_solvable: bool = True) -> List[List[int]]:
         """
-        Generate a single random maze.
-        
+        Generate a single random maze without pre-set start and end points.
+
+        Args:
+            should_be_solvable: Whether this maze should have a solution (ignored for now)
+
         Returns:
-            2D list representing the maze (0=path, 1=wall)
+            2D list representing the maze (0=path, 1=wall) - no start/end points set
         """
         # Initialize maze with walls
         maze = np.ones((self.size, self.size), dtype=int)
-        
+
         # Create random paths in the interior
         for row in range(1, self.size - 1):
             for col in range(1, self.size - 1):
-                # 30% chance of being a wall, 70% chance of being a path
-                maze[row][col] = random.choice([0, 0, 0, 1])
-        
-        # Ensure corners are paths for potential start/end points
-        maze[0][0] = 0
-        maze[self.size - 1][self.size - 1] = 0
-        
-        # Carve a guaranteed path from top-left to bottom-right
-        self._carve_guaranteed_path(maze)
-        
+                # 40% chance of being a wall, 60% chance of being a path
+                maze[row][col] = random.choice([0, 0, 0, 1, 1])
+
+        # Ensure corners are paths to provide good starting options
+        maze[0][0] = 0  # Top-left
+        maze[0][self.size - 1] = 0  # Top-right
+        maze[self.size - 1][0] = 0  # Bottom-left
+        maze[self.size - 1][self.size - 1] = 0  # Bottom-right
+
+        # Carve some guaranteed paths for connectivity
+        self._carve_connectivity_paths(maze)
+
         # Add some random path connections
         self._add_random_connections(maze)
-        
+
         return maze.tolist()
     
-    def _carve_guaranteed_path(self, maze: np.ndarray) -> None:
+    def _carve_connectivity_paths(self, maze: np.ndarray) -> None:
         """
-        Carve a guaranteed path from top-left to bottom-right.
-        
+        Carve some paths to ensure basic connectivity in the maze.
+
         Args:
             maze: The maze array to modify
         """
-        row, col = 0, 0
-        
-        while row < self.size - 1 or col < self.size - 1:
-            maze[row][col] = 0
-            
-            # Randomly choose to go right or down
-            if row == self.size - 1:
-                # Must go right
-                col += 1
-            elif col == self.size - 1:
-                # Must go down
-                row += 1
-            else:
-                # Choose randomly
-                if random.choice([True, False]):
-                    row += 1
-                else:
-                    col += 1
-        
-        # Ensure the destination is a path
-        maze[self.size - 1][self.size - 1] = 0
+        # Create a few connecting paths to ensure the maze isn't too fragmented
+
+        # Horizontal path across the middle
+        mid_row = self.size // 2
+        for col in range(0, self.size, 2):
+            if col < self.size:
+                maze[mid_row][col] = 0
+
+        # Vertical path down the middle
+        mid_col = self.size // 2
+        for row in range(0, self.size, 2):
+            if row < self.size:
+                maze[row][mid_col] = 0
+
+        # Connect corners to center with some paths
+        # Top-left to center
+        for i in range(min(self.size // 3, 5)):
+            if i < self.size and i < self.size:
+                maze[i][i] = 0
+
+        # Bottom-right to center
+        for i in range(max(self.size - self.size // 3, self.size - 5), self.size):
+            if i >= 0 and i < self.size:
+                maze[i][i] = 0
     
     def _add_random_connections(self, maze: np.ndarray) -> None:
         """
@@ -105,50 +113,63 @@ class WebMazeGenerator:
     
     def generate_multiple_mazes(self, count: int = 5) -> List[List[List[int]]]:
         """
-        Generate multiple random mazes.
-        
+        Generate multiple random mazes without pre-set start/end points.
+
         Args:
             count: Number of mazes to generate
-            
+
         Returns:
-            List of mazes, each maze is a 2D list
+            List of mazes, each maze is a 2D list (0=path, 1=wall)
         """
         mazes = []
-        
+        print(f"🎲 Generating {count} random mazes (no start/end points)")
+
         for i in range(count):
             try:
                 maze = self.generate_single_maze()
                 mazes.append(maze)
-                # Only log errors, not every successful generation
+                print(f"✅ Generated maze {i+1}: ready for start/end point selection")
             except Exception as e:
-                print(f"Error generating maze {i + 1}: {e}")
+                print(f"❌ Error generating maze {i + 1}: {e}")
                 # Generate a simple fallback maze
                 fallback_maze = self._generate_fallback_maze()
                 mazes.append(fallback_maze)
-        
+
         return mazes
     
     def _generate_fallback_maze(self) -> List[List[int]]:
         """
         Generate a simple fallback maze in case of errors.
-        
+
         Returns:
-            Simple maze with guaranteed path
+            Simple maze without start/end points
         """
         maze = np.ones((self.size, self.size), dtype=int)
-        
-        # Create a simple path pattern
-        for i in range(self.size):
-            maze[i][0] = 0  # Left column
-            maze[0][i] = 0  # Top row
-            maze[self.size - 1][i] = 0  # Bottom row
-            maze[i][self.size - 1] = 0  # Right column
-        
+
+        # Create simple cross pattern
+        mid_row = self.size // 2
+        mid_col = self.size // 2
+
+        # Horizontal line
+        for col in range(self.size):
+            maze[mid_row][col] = 0
+
+        # Vertical line
+        for row in range(self.size):
+            maze[row][mid_col] = 0
+
         # Add some interior paths
         for i in range(2, self.size - 2, 2):
             for j in range(2, self.size - 2, 2):
-                maze[i][j] = 0
-        
+                if random.random() < 0.3:  # 30% chance
+                    maze[i][j] = 0
+
+        # Ensure corners are paths
+        maze[0][0] = 0
+        maze[0][self.size - 1] = 0
+        maze[self.size - 1][0] = 0
+        maze[self.size - 1][self.size - 1] = 0
+
         return maze.tolist()
     
     def validate_maze(self, maze: List[List[int]]) -> bool:
