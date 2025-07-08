@@ -1,157 +1,154 @@
-# 🧠 Maze Solver AI
+# 🧠 AI-Based Maze Solver
 
-A comprehensive Python project that generates mazes and solves them using various AI algorithms with both web and desktop interfaces.
+An intelligent Python-based application that generates mazes and solves them using classical and AI pathfinding algorithms. Features both a **web interface (Flask)** and a **desktop GUI (Tkinter/Pygame)** for interaction.
 
-## ✨ Features
+---
 
-- **Multiple Maze Types**: Generate random mazes or draw custom mazes manually
-- **AI Algorithms**: A*, BFS, DFS, and Dijkstra pathfinding algorithms
-- **Web Interface**: Modern Flask-based web application
-- **Visual Solutions**: See both the original maze and the solved path
-- **Performance Metrics**: Track solving time and algorithm performance
-- **Robust Error Handling**: Comprehensive logging and error management
+## 🚀 Key Features
 
-## 🚀 Quick Start
+- 🔁 **Maze Types**: Generate **random** or **custom manual** mazes
+- 🧭 **Pathfinding Algorithms**: A*, BFS, DFS, Dijkstra, and Reinforcement Learning (RL)
+- 🌐 **Web App**: Intuitive Flask-based web interface
+- 🎮 **Desktop GUI**: Tkinter + Pygame for offline interaction
+- 🖼️ **Visual Outputs**: Displays original maze and the solved path as images
+- 📊 **Performance Tracking**: Time, path length, and stats per algorithm
+- 🧩 **Modular Design**: Clean separation of algorithms, UI, and logic
+- 🧰 **Robust Logging**: All events and errors logged in `maze_solver.log`
 
-### Prerequisites
-- Python 3.8 or higher
-- pip package manager
+---
 
-### Installation
+## 🧱 Project Structure
 
-1. **Clone the repository**:
-   ```bash
-   git clone <repository-url>
-   cd maze-solver-ai
-   ```
+```
+maze-solver-ai/
+├── app.py                 # Flask web server
+├── random_maze.py         # Maze generator logic
+├── rl_solver.py           # Reinforcement Learning solver
+├── [algorithm files].py   # A*, BFS, DFS, Dijkstra implementations
+├── templates/
+│   └── index.html         # Web interface
+├── solution.png           # Image of solved maze
+├── maze.png               # Original generated maze
+├── config.py              # Custom settings
+├── utils.py               # Helper functions
+├── requirements.txt       # Dependency list
+├── selected_maze.txt      # Maze file used for solving
+└── maze_solver.log        # Error and activity logs
+```
 
-2. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+---
 
-### Running the Application
+## 💡 Algorithms Implemented
 
-#### Web Interface (Recommended)
+| Algorithm | Description | Guarantees Shortest Path |
+|----------|-------------|---------------------------|
+| **A\*** | Uses heuristics (Manhattan distance) | ✅ |
+| **BFS** | Explores level-by-level | ✅ |
+| **DFS** | Memory-efficient depth search | ❌ |
+| **Dijkstra** | Weighted graph shortest path | ✅ |
+| **RL Solver** | Chooses best path among all algos | ✅ |
+
+---
+
+## 🌐 Web Usage
+
+### ▶️ Launch App
 ```bash
 python app.py
 ```
-Then open your browser to `http://localhost:5000`
 
-#### Desktop GUI
+### 📍 Open in Browser
+```
+http://localhost:5000
+```
+
+### 🖱️ How to Use
+1. Choose Maze Type (Manual or Random)
+2. Set Maze Size (8x8 to 50x50)
+3. Select an Algorithm
+4. Click **Solve Maze**
+
+---
+
+## 🖥️ Desktop GUI Usage
+
+### ▶️ Run Desktop App
 ```bash
 python main.py
 ```
 
-## 🎮 How to Use
+### 🔧 Steps
+1. Choose maze mode (draw or generate)
+2. Select algorithm
+3. View maze and solution graphically
 
-### Web Interface
-1. Select maze type (Manual or Random)
-2. Choose maze size (8-50)
-3. Pick solving algorithm (A*, BFS, DFS, Dijkstra)
-4. Click "Solve Maze" to see the results
+---
 
-### Desktop Interface
-1. Choose maze generation method
-2. Set maze size
-3. Generate the maze
-4. Select solving algorithm
-5. View the solution
+## 📦 Installation
 
-## 🧩 Algorithms
+### Prerequisites
+- Python 3.8+
+- `pip` package manager
 
-- **A* (A-Star)**: Optimal pathfinding using heuristics
-- **BFS (Breadth-First Search)**: Guarantees shortest path
-- **DFS (Depth-First Search)**: Memory efficient, may not find shortest path
-- **Dijkstra**: Optimal for weighted graphs
-
-## 🔧 Tech Stack
-
-- **Backend**: Python 3, Flask
-- **Frontend**: HTML5, CSS3, JavaScript
-- **Graphics**: Pygame
-- **GUI**: Tkinter
-- **Data Processing**: NumPy
-- **Image Processing**: Pillow
-
-## 📁 Project Structure
-
+### Setup Instructions
+```bash
+git clone <repo-url>
+cd maze-solver-ai
+pip install -r requirements.txt
 ```
-maze-solver-ai/
-├── app.py              # Flask web application
-├── main.py             # Desktop GUI application
-├── config.py           # Configuration settings
-├── utils.py            # Utility functions
-├── requirements.txt    # Python dependencies
-├── templates/          # HTML templates
-│   └── index.html
-├── algorithms/         # Pathfinding algorithms
-│   ├── astar.py
-│   ├── bfs.py
-│   ├── dfs.py
-│   └── dijkstra.py
-└── maze_generators/    # Maze generation scripts
-    ├── manual_maze.py
-    └── random_maze.py
-```
+
+---
 
 ## 🛠️ Configuration
 
-Edit `config.py` to customize:
-- Maze size limits
-- Algorithm timeouts
-- Color schemes
-- File paths
-- Logging levels
+Modify `config.py` to:
+- Change default maze size
+- Adjust color schemes
+- Set timeout limits
+- Configure image and log paths
 
-## 📊 Performance
+---
 
-The application includes performance monitoring:
-- Algorithm execution time
-- Memory usage tracking
-- Success/failure rates
-- Path length optimization
+## 🐞 Troubleshooting
 
-## 🐛 Troubleshooting
+| Issue | Fix |
+|-------|-----|
+| Import Errors | Run `pip install -r requirements.txt` |
+| Maze not rendering | Check `maze.png`/`solution.png` generation |
+| Pygame issues | Install manually: `pip install pygame` |
+| Port 5000 busy | Change port in `app.py` or `config.py` |
+| Image write permission | Ensure you have folder write access |
 
-### Common Issues
+Logs are stored in `maze_solver.log`.
 
-1. **Import Errors**: Ensure all dependencies are installed
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. **Pygame Issues**: Install pygame separately if needed
-   ```bash
-   pip install pygame
-   ```
-
-3. **Port Already in Use**: Change the port in `config.py`
-
-4. **Image Generation Fails**: Check write permissions in the project directory
-
-### Logs
-
-Check `maze_solver.log` for detailed error information and debugging.
+---
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+1. **Fork** this repository
+2. Create your **feature branch**
+3. **Commit** your changes with context
+4. Submit a **Pull Request** 🚀
 
-## 📝 License
+---
 
-This project is open source and available under the MIT License.
+## 🔮 Roadmap / Future Enhancements
 
-## 🔮 Future Enhancements
-
-- [ ] Real-time solving animation
-- [ ] Machine learning-based pathfinding
+- [ ] Live solving animations
 - [ ] 3D maze support
-- [ ] Multiplayer maze challenges
-- [ ] Mobile app version
-- [ ] Advanced maze patterns
-- [ ] Performance benchmarking dashboard
+- [ ] Mobile-responsive web interface
+- [ ] Advanced visualizations & analytics
+- [ ] Multiplayer maze competitions
+- [ ] Maze difficulty prediction using ML
+
+---
+
+## 📜 License
+
+Licensed under the [MIT License](LICENSE).
+
+---
+
+## 🙌 Credits
+
+Created with ❤️ using Python, Flask, Tkinter, and classic AI techniques.
